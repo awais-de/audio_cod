@@ -1,0 +1,51 @@
+# Neural Audio Codec Configuration
+
+model:
+  sample_rate: 16000        # Audio sample rate (Hz)
+  hop_length: 160           # Hop length for downsampling (10ms at 16kHz)
+  d_model: 512              # Model embedding dimension
+  n_layers: 8               # Number of transformer layers
+  n_heads: 16               # Number of attention heads
+  window_size: 512          # Sliding window size for causal attention
+  dropout: 0.1              # Dropout rate (set to 0.0 for inference)
+
+training:
+  epochs: 100               # Number of training epochs
+  batch_size: 8             # Batch size
+  learning_rate: 0.0001     # Initial learning rate
+  weight_decay: 0.01        # Weight decay for AdamW
+  gradient_clip: 1.0        # Gradient clipping max norm
+  
+  # Loss weights
+  l1_weight: 1.0            # Time-domain L1 loss weight
+  spectral_weight: 1.0      # Multi-scale spectral loss weight
+  
+  # Data
+  segment_length: 16000     # Audio segment length (1 second at 16kHz)
+  num_workers: 4            # DataLoader workers
+
+data:
+  train_dir: "data/train"   # Training audio directory
+  val_dir: "data/val"       # Validation audio directory
+  extensions: ['.wav', '.flac', '.mp3']  # Supported audio formats
+
+checkpoint:
+  dir: "checkpoints"        # Checkpoint directory
+  save_every: 10            # Save checkpoint every N epochs
+
+inference:
+  chunk_size: 16000         # Chunk size for processing long audio
+  device: "cuda"            # Device (cuda/cpu)
+
+# Target specifications
+target:
+  latency_ms: 20            # Target latency (milliseconds)
+  bitrate_kbps: 16          # Target bitrate after quantization (kbps)
+  compression_ratio: 32     # Target compression ratio
+
+# Quantization (for future implementation)
+quantization:
+  method: "RVQ"             # Residual Vector Quantization or FSQ (Finite Scalar Quantization)
+  codebook_size: 1024       # Codebook size
+  num_quantizers: 8         # Number of quantizers for RVQ
+  commitment_weight: 0.25   # Commitment loss weight
