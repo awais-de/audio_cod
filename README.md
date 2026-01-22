@@ -1,3 +1,5 @@
+##Published to GitHub
+
 # Low-Latency Neural Audio Codec
 
 A Transformer-based neural audio codec for real-time speech compression with <20ms latency. This implementation provides the encoder and decoder components for high-quality audio compression at low bitrates (8-16 kbps).
