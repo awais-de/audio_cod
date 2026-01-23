@@ -1,0 +1,10 @@
+training.log
+__pycache__/model.cpython-310.pyc
+__pycache__/model.cpython-311.pyc
+__pycache__/train_optimized.cpython-311.pyc
+__pycache__/train.cpython-311.pyc
+checkpoints/best_model.pt
+quick_checkpoints/checkpoint_epoch_5.pt
+__pycache__/model.cpython-311.pyc
+__pycache__/model.cpython-311.pyc
+Miniconda3-latest-Linux-x86_64.sh

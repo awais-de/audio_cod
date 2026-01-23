@@ -63,19 +63,25 @@ class CausalAttention(nn.Module):
         # Compute attention scores
         attn = torch.matmul(q, k.transpose(-2, -1)) * self.scale  # (batch, n_heads, seq_len, seq_len)
         
-        # Create causal mask with sliding window
-        causal_mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device), diagonal=1).bool()
+        # Create causal mask - prevent attention to future positions
+        device = x.device
+        causal_mask = torch.triu(torch.ones(seq_len, seq_len, device=device), diagonal=1).bool()
         
         # Optional: Apply sliding window (limit attention to recent past)
         if self.window_size is not None and seq_len > self.window_size:
-            window_mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device), 
-                                     diagonal=-self.window_size).bool()
+            window_mask = torch.triu(torch.ones(seq_len, seq_len, device=device), 
+                                     diagonal=self.window_size + 1).bool()
             causal_mask = causal_mask | window_mask
         
-        attn = attn.masked_fill(causal_mask.unsqueeze(0).unsqueeze(0), float('-inf'))
+        # Apply mask by setting to very negative value (not -inf to avoid NaN)
+        attn = attn.masked_fill(causal_mask.unsqueeze(0).unsqueeze(0), -1e9)
         
-        # Softmax and dropout
+        # Softmax with numerical stability
         attn = F.softmax(attn, dim=-1)
+        
+        # Replace any NaN with zeros
+        attn = torch.nan_to_num(attn, nan=0.0, posinf=0.0, neginf=0.0)
+        
         attn = self.dropout(attn)
         
         # Apply attention to values
@@ -234,23 +240,23 @@ class AudioDecoder(nn.Module):
             ),
             # Layer 2: (batch, 256, seq_len) -> (batch, 128, seq_len*2)
             nn.Sequential(
-                nn.ConvTranspose1d(256, 128, kernel_size=8, stride=2, padding=3),
+                nn.ConvTranspose1d(256, 128, kernel_size=8, stride=2, padding=3, output_padding=0),
                 nn.GroupNorm(16, 128),
                 nn.GELU(),
             ),
             # Layer 3: (batch, 128, seq_len*2) -> (batch, 64, seq_len*4)
             nn.Sequential(
-                nn.ConvTranspose1d(128, 64, kernel_size=8, stride=2, padding=3),
+                nn.ConvTranspose1d(128, 64, kernel_size=8, stride=2, padding=3, output_padding=0),
                 nn.GroupNorm(8, 64),
                 nn.GELU(),
             ),
             # Layer 4: (batch, 64, seq_len*4) -> (batch, 32, seq_len*8)
             nn.Sequential(
-                nn.ConvTranspose1d(64, 32, kernel_size=8, stride=2, padding=3),
+                nn.ConvTranspose1d(64, 32, kernel_size=8, stride=2, padding=3, output_padding=0),
                 nn.GroupNorm(4, 32),
                 nn.GELU(),
             ),
-            # Final layer: (batch, 32, seq_len*8) -> (batch, 1, seq_len*8)
+            # Final layer: (batch, 32, seq_len*8) -> (batch, 1, seq_len*8) with proper output padding
             nn.ConvTranspose1d(32, 1, kernel_size=7, stride=1, padding=3),
         ])
         
