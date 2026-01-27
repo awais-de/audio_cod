@@ -19,6 +19,11 @@ from src.model import NeuralAudioCodec
 import soundfile as sf
 from tqdm import tqdm
 
+# Use large data disk for temp to avoid full root /tmp
+TMPDIR_PATH = Path("/mnt/Data/muaw1874/tmp")
+TMPDIR_PATH.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("TMPDIR", str(TMPDIR_PATH))
+
 try:
     from pesq import pesq
     from pystoi import stoi
@@ -183,7 +188,7 @@ def main():
     # Data - reduced batch size and segment length for memory efficiency
     print("Loading data...")
     dataset = AudioDataset('/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100', segment_length=8000)  # 0.5s instead of 1s
-    train_loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=4, pin_memory=True, drop_last=True)  # Batch 2 instead of 16
+    train_loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=0, pin_memory=False, drop_last=True)  # num_workers=0 to avoid /tmp issues
     val_loader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
     
     print(f"Dataset: {len(dataset)} files")

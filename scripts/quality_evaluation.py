@@ -42,7 +42,7 @@ class QualityEvaluator:
         print(f"🔧 Loading model from: {checkpoint_path}")
         
         # Load model
-        checkpoint = torch.load(checkpoint_path, map_location=device)
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
         self.model = NeuralAudioCodec(
             d_model=checkpoint.get('d_model', 256),
             n_layers=checkpoint.get('n_layers', 4),

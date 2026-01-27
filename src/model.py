@@ -51,8 +51,8 @@ class CausalAttention(nn.Module):
         qkv = qkv.permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
         
-        # Compute attention scores
-        attn = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+        # Compute attention scores (keep in float32 to avoid fp16 overflow)
+        attn = torch.matmul(q, k.transpose(-2, -1)).float() * self.scale
         
         # Create causal mask
         device = x.device
@@ -64,7 +64,9 @@ class CausalAttention(nn.Module):
                                      diagonal=self.window_size + 1).bool()
             causal_mask = causal_mask | window_mask
         
-        attn = attn.masked_fill(causal_mask.unsqueeze(0).unsqueeze(0), -1e9)
+        # Use safe mask value to avoid fp16 overflow
+        mask_value = -1e4
+        attn = attn.masked_fill(causal_mask.unsqueeze(0).unsqueeze(0), mask_value)
         attn = F.softmax(attn, dim=-1)
         attn = torch.nan_to_num(attn, nan=0.0, posinf=0.0, neginf=0.0)
         attn = self.dropout(attn)
