@@ -59,14 +59,13 @@ class QualityEvaluator:
         print(f"   Parameters: {sum(p.numel() for p in self.model.parameters()):,}")
         print()
     
-    def process_audio(self, audio_path):
+    def process_audio(self, audio_path, max_duration=10.0):
         """Process audio file through codec and return original + reconstructed"""
         # Load audio
         audio, sr = sf.read(audio_path)
         
         # Resample if needed
         if sr != self.sample_rate:
-            print(f"   Resampling from {sr} Hz to {self.sample_rate} Hz")
             audio = np.interp(
                 np.linspace(0, len(audio), int(len(audio) * self.sample_rate / sr)),
                 np.arange(len(audio)),
@@ -77,15 +76,30 @@ class QualityEvaluator:
         if len(audio.shape) > 1:
             audio = audio.mean(axis=1)
         
-        # Convert to tensor
-        audio_tensor = torch.FloatTensor(audio).unsqueeze(0).unsqueeze(0).to(self.device)
+        # Limit duration to avoid OOM
+        max_samples = int(max_duration * self.sample_rate)
+        if len(audio) > max_samples:
+            audio = audio[:max_samples]
         
-        # Process through codec
+        # Process in chunks to avoid OOM
+        chunk_size = int(2.0 * self.sample_rate)  # 2 second chunks
+        reconstructed_chunks = []
+        
         with torch.no_grad():
-            reconstructed_tensor = self.model(audio_tensor)
+            for i in range(0, len(audio), chunk_size):
+                chunk = audio[i:i + chunk_size]
+                chunk_tensor = torch.FloatTensor(chunk).unsqueeze(0).unsqueeze(0).to(self.device)
+                
+                recon_chunk = self.model(chunk_tensor)
+                reconstructed_chunks.append(recon_chunk.squeeze().cpu().numpy())
+                
+                # Clear GPU memory
+                del chunk_tensor, recon_chunk
+                if self.device == 'cuda':
+                    torch.cuda.empty_cache()
         
-        # Convert back to numpy
-        reconstructed = reconstructed_tensor.squeeze().cpu().numpy()
+        # Concatenate chunks
+        reconstructed = np.concatenate(reconstructed_chunks)
         
         # Ensure same length
         min_len = min(len(audio), len(reconstructed))
