@@ -1,0 +1,56 @@
+# Improved Neural Audio Codec Training Configuration
+# Optimized for QUALITY while maintaining reasonable speed
+
+model:
+  sample_rate: 16000        # Audio sample rate (Hz)
+  hop_length: 160           # Hop length (10ms at 16kHz)
+  d_model: 384              # INCREASED from 256 for better capacity
+  n_layers: 6               # INCREASED from 4 for better depth
+  n_heads: 8                # Keep at 8 (good balance)
+  window_size: 512          # INCREASED from 256 for more context
+  dropout: 0.1              # Dropout rate
+
+training:
+  epochs: 200               # INCREASED from 100 - need more training
+  batch_size: 16            # REDUCED from 32 to fit larger model
+  learning_rate: 0.0001     # Keep same
+  weight_decay: 0.01        # Keep same
+  gradient_clip: 1.0        # Keep same
+  warmup_epochs: 5          # NEW: Learning rate warmup
+  
+  # Loss weights - INCREASED spectral importance
+  l1_weight: 1.0            # Time-domain L1 loss weight
+  spectral_weight: 2.0      # INCREASED from 1.0 - emphasize frequency content
+  phase_weight: 0.5         # NEW: Phase-aware loss
+  
+  # Data
+  segment_length: 8000      # INCREASED from 6000 for better context
+  num_workers: 4            # Keep at 4
+  
+  # Quality monitoring
+  eval_every: 5             # Evaluate quality metrics every N epochs
+  early_stopping_patience: 20  # Stop if no improvement for N epochs
+
+data:
+  train_dir: "/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100"
+  val_dir: "/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100"
+  extensions: ['.wav', '.flac', '.mp3']
+
+checkpoint:
+  dir: "checkpoints_improved"  # Separate directory
+  save_every: 10            # Save checkpoint every N epochs
+  keep_best: true           # Keep track of best model by quality
+
+# Model Improvements:
+# Parameters: 12M -> ~22M (better capacity while still efficient)
+#   - d_model: 256 -> 384 (1.5x increase)
+#   - n_layers: 4 -> 6 (1.5x increase)
+#   - window_size: 256 -> 512 (2x increase - more context)
+#
+# Training Improvements:
+#   - More epochs: 100 -> 200
+#   - Better loss weighting (emphasize spectral quality)
+#   - Quality-based early stopping
+#   - Learning rate warmup for stability
+#
+# Expected Training Time: ~2-3 days (vs 22 hours for 100 epochs)
