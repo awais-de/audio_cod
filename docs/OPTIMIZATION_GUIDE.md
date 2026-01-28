@@ -137,8 +137,8 @@ training:
   num_workers: 4            # Parallel data loading processes
 
 data:
-  train_dir: "/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100"
-  val_dir: "/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100"
+  train_dir: "/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100"
+  val_dir: "/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100"
 ```
 
 ### Tuning Tips
@@ -159,8 +159,8 @@ The project uses **LibriSpeech train-clean-100**:
 
 **Manual Download** (optional):
 ```bash
-mkdir -p /mnt/Data/muaw1874/datasets
-cd /mnt/Data/muaw1874/datasets
+mkdir -p /home/muaw1874/Desktop/ac_proj/datasets
+cd /home/muaw1874/Desktop/ac_proj/datasets
 wget https://openslr.trmal.net/resources/12/train-clean-100.tar.gz
 tar -xzf train-clean-100.tar.gz
 ```
@@ -309,4 +309,4 @@ For issues or questions:
 1. Run sanity check: `python scripts/sanity_check.py`
 2. Check config: `config/training.yaml`
 3. Review logs in console output
-4. Verify dataset is downloaded: `ls /mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100/`
+4. Verify dataset is downloaded: `ls /home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100/`

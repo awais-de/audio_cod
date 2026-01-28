@@ -154,7 +154,7 @@ def main():
     if 'optimizer_state_dict' in ckpt:
         optimizer.load_state_dict(ckpt['optimizer_state_dict'])
 
-    dataset = AudioDataset('/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100', segment_length=8000)
+    dataset = AudioDataset('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100', segment_length=8000)
     train_loader = DataLoader(dataset, batch_size=16, shuffle=True, num_workers=0, pin_memory=False, drop_last=True)
     val_loader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
 

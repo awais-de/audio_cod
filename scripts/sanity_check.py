@@ -222,8 +222,8 @@ Option 1: Using the training script (automatic)
   The script will detect missing dataset and download it automatically.
 
 Option 2: Manual download
-  mkdir -p /mnt/Data/muaw1874/datasets
-  cd /mnt/Data/muaw1874/datasets
+  mkdir -p /home/muaw1874/Desktop/ac_proj/datasets
+  cd /home/muaw1874/Desktop/ac_proj/datasets
   wget https://openslr.trmal.net/resources/12/train-clean-100.tar.gz
   tar -xzf train-clean-100.tar.gz
   # Update config/training.yaml with the extracted path

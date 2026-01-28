@@ -187,7 +187,7 @@ def main():
     
     # Data - reduced batch size and segment length for memory efficiency
     print("Loading data...")
-    dataset = AudioDataset('/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100', segment_length=8000)  # 0.5s instead of 1s
+    dataset = AudioDataset('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100', segment_length=8000)  # 0.5s instead of 1s
     train_loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=0, pin_memory=False, drop_last=True)  # num_workers=0 to avoid /tmp issues
     val_loader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
     

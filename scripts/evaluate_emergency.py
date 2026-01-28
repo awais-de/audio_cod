@@ -14,8 +14,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.model import NeuralAudioCodec
 
 DATA_ROOTS = [
-    Path('/mnt/Data/muaw1874/datasets/LibriSpeech/test-clean'),
-    Path('/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100'),
+    Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/test-clean'),
+    Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100'),
 ]
 SR = 16000
 DEFAULT_SEG_SEC = 4.0  # longer segment for reliable STOI/PESQ

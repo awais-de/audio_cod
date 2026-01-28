@@ -413,7 +413,7 @@ def main():
     parser.add_argument('--checkpoint', type=str, default='checkpoints/best_model.pt',
                        help='Path to model checkpoint')
     parser.add_argument('--audio-dir', type=str,
-                       default='/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100',
+                       default='/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100',
                        help='Directory containing test audio files')
     parser.add_argument('--audio-file', type=str, default=None,
                        help='Single audio file to test (optional)')

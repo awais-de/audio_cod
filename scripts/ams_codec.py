@@ -32,10 +32,10 @@ from src.model import NeuralAudioCodec
 # Globals
 _model: Optional[NeuralAudioCodec] = None
 _device: Optional[torch.device] = None
-_d_model: int = 256  # default; will be updated from checkpoint if available
+_d_model: int = 384  # default for best_pesq_finetune checkpoint; will be updated from checkpoint if available
 
 
-def _load_model(checkpoint_path: str = "checkpoints_finetuned/best_model_finetuned.pt", device: Optional[str] = None):
+def _load_model(checkpoint_path: str = "checkpoints_emergency/best_pesq_finetune.pt", device: Optional[str] = None):
     """Load codec model once and cache it."""
     global _model, _device, _d_model
     if _model is not None:
@@ -48,8 +48,8 @@ def _load_model(checkpoint_path: str = "checkpoints_finetuned/best_model_finetun
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
     checkpoint = torch.load(ckpt_path, map_location=_device, weights_only=False)
-    _d_model = checkpoint.get("d_model", 256)
-    n_layers = checkpoint.get("n_layers", 4)
+    _d_model = checkpoint.get("d_model", 384)
+    n_layers = checkpoint.get("n_layers", 6)
     n_heads = checkpoint.get("n_heads", 8)
 
     _model = NeuralAudioCodec(d_model=_d_model, n_layers=n_layers, n_heads=n_heads).to(_device)

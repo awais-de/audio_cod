@@ -164,7 +164,7 @@ def main():
     criterion = PESQLoss().to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1.5e-5, weight_decay=0.01)
 
-    dataset = AudioDataset('/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100', segment_length=16000)
+    dataset = AudioDataset('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100', segment_length=16000)
     train_loader = DataLoader(dataset, batch_size=8, shuffle=True, num_workers=0, pin_memory=False, drop_last=True)
     val_loader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
 
