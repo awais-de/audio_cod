@@ -144,7 +144,11 @@ def pick_non_silent_segment(audio, seg_len, tries=10):
 def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
+    # Accept checkpoint path from command line or use default
     ckpt_path = DEFAULT_CKPT
+    if len(sys.argv) > 1:
+        ckpt_path = Path(sys.argv[1])
+    
     if not ckpt_path.exists():
         print(f"Error: Checkpoint not found: {ckpt_path}")
         return

@@ -1,5 +1,5 @@
-checkpoint=checkpoints_emergency/best_pesq_finetune.pt
+checkpoint=checkpoints_emergency/finetuned/best.pt
 files=10
-PESQ=2.900
-STOI=0.897
+PESQ=2.941
+STOI=0.950
 method=scipy_approximation
