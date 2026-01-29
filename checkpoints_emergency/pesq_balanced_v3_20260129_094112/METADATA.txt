@@ -1,0 +1,15 @@
+=== V3 BALANCED FINE-TUNING ===
+Run Name: pesq_balanced_v3_20260129_094112
+Start Time: 2026-01-29 10:44:41
+
+CONFIGURATION:
+  Learning Rate: 3e-06 (BALANCED - midpoint of V1 & V2)
+  Init Checkpoint: checkpoints_emergency/finetuned/best.pt
+  Batch Size: 4
+  Dataset Files: 1500
+  Total Epochs: 20
+  Best Loss: 0.074111
+
+OBJECTIVE:
+  Optimize BOTH PESQ and STOI
+  Expected: PESQ 3.0-3.1 | STOI 0.95-0.96
