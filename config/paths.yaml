@@ -14,7 +14,7 @@ datasets:
 # Checkpoint paths (relative to project root)
 checkpoints:
   root: "checkpoints_emergency"
-  v3_baseline: "checkpoints_emergency/V3.pt"
+  v3_baseline: "checkpoints_emergency/pesq_balanced_v3_20260129_094112/best.pt"
   phase1: "checkpoints_emergency/phase1_multiscale_20260129_124452/best.pt"
   phase2: "checkpoints_emergency/phase2_perceptual_20260129_210723/best.pt"
   phase3: "checkpoints_emergency/phase3_extended_data_20260129_213522/best.pt"
