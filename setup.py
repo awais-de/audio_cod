@@ -63,9 +63,9 @@ class SetupManager:
             root_cfg = datasets_cfg.get('librispeech', {})
             
             # Resolve relative paths
-            self.datasets_root = (self.project_parent / datasets_cfg.get('root', '../datasets')).resolve()
-            self.train_clean_100 = (self.project_parent / root_cfg.get('train_clean_100', '../datasets/LibriSpeech/train-clean-100')).resolve()
-            self.test_clean = (self.project_parent / root_cfg.get('test_clean', '../datasets/LibriSpeech/test-clean')).resolve()
+            self.datasets_root = (self.project_parent / datasets_cfg.get('root', 'datasets')).resolve()
+            self.train_clean_100 = (self.project_parent / root_cfg.get('train_clean_100', 'datasets/LibriSpeech/train-clean-100')).resolve()
+            self.test_clean = (self.project_parent / root_cfg.get('test_clean', 'datasets/LibriSpeech/test-clean')).resolve()
 
     def print_header(self, text):
         """Print formatted header"""

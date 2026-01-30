@@ -5,11 +5,11 @@
 # Dataset paths (relative to project root parent directory)
 # The 'datasets' directory is a sibling to the 'audio_cod' project root
 datasets:
-  root: "../datasets"  # Sibling directory to this project
+  root: "datasets"  # Sibling directory under the project parent
   librispeech:
-    root: "../datasets/LibriSpeech"
-    train_clean_100: "../datasets/LibriSpeech/train-clean-100"
-    test_clean: "../datasets/LibriSpeech/test-clean"
+    root: "datasets/LibriSpeech"
+    train_clean_100: "datasets/LibriSpeech/train-clean-100"
+    test_clean: "datasets/LibriSpeech/test-clean"
 
 # Checkpoint paths (relative to project root)
 checkpoints:
