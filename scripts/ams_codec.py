@@ -41,7 +41,8 @@ def _load_model(checkpoint_path: str = "checkpoints_emergency/best_pesq_finetune
     if _model is not None:
         return
 
-    _device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Use CPU by default for compatibility with AMS platform
+    _device = torch.device(device) if device else torch.device("cpu")
 
     ckpt_path = Path(checkpoint_path)
     if not ckpt_path.exists():
