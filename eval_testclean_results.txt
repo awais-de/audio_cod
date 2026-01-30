@@ -1,0 +1,43 @@
+================================================================================
+EVALUATION ON LIBRISPEECH TEST-CLEAN
+================================================================================
+Device: cuda
+Sample length: 16000 samples (1.0s at 16000Hz)
+Max samples: 50
+
+Found 1970 test-clean audio files
+Total test-clean files: 1970
+
+
+Evaluating V3 Baseline...
+Checkpoint: /home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/V3.pt
+  ❌ Checkpoint not found
+
+Evaluating Phase 1...
+Checkpoint: /home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase1_multiscale_20260129_124452/best.pt
+Evaluating:   0%|          | 0/50 [00:00<?, ?file/s]Evaluating: 100%|██████████| 50/50 [00:00<00:00, 18801.79file/s]
+
+Evaluating Phase 2...
+Checkpoint: /home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase2_perceptual_20260129_210723/best.pt
+Evaluating:   0%|          | 0/50 [00:00<?, ?file/s]Evaluating: 100%|██████████| 50/50 [00:00<00:00, 20213.51file/s]
+
+Evaluating Phase 3...
+Checkpoint: /home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase3_extended_data_20260129_213522/best.pt
+Evaluating:   0%|          | 0/50 [00:00<?, ?file/s]Evaluating: 100%|██████████| 50/50 [00:00<00:00, 20645.32file/s]
+
+Evaluating Phase 4...
+Checkpoint: /home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase4_adversarial_20260130_063348/best.pt
+Evaluating:   0%|          | 0/50 [00:00<?, ?file/s]Evaluating: 100%|██████████| 50/50 [00:00<00:00, 19898.97file/s]
+
+================================================================================
+COMPARISON TABLE
+================================================================================
+Model                     PESQ                 STOI                
+--------------------------------------------------------------------------------
+Phase 1                   N/A                  N/A                 
+Phase 2                   N/A                  N/A                 
+Phase 3                   N/A                  N/A                 
+Phase 4                   N/A                  N/A                 
+================================================================================
+
+EVALUATION COMPLETE
