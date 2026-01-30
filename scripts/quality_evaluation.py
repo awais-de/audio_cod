@@ -18,6 +18,9 @@ import soundfile as sf
 from tqdm import tqdm
 import yaml
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
+
+DEFAULT_AUDIO_DIR = str(get_dataset_paths()["train_clean_100"])
 
 # Audio quality metrics
 try:
@@ -413,7 +416,7 @@ def main():
     parser.add_argument('--checkpoint', type=str, default='checkpoints/best_model.pt',
                        help='Path to model checkpoint')
     parser.add_argument('--audio-dir', type=str,
-                       default='/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100',
+                       default=DEFAULT_AUDIO_DIR,
                        help='Directory containing test audio files')
     parser.add_argument('--audio-file', type=str, default=None,
                        help='Single audio file to test (optional)')

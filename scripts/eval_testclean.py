@@ -18,6 +18,7 @@ warnings.filterwarnings('ignore')
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 from model import NeuralAudioCodec
+from paths import get_dataset_paths
 
 # PESQ and STOI imports
 try:
@@ -75,7 +76,7 @@ def load_model(checkpoint_path):
 
 def get_test_files():
     """Get all test-clean audio files."""
-    test_path = Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/test-clean')
+    test_path = get_dataset_paths()["test_clean"]
     if not test_path.exists():
         print(f"Error: test-clean directory not found at {test_path}")
         return []

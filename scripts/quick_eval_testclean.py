@@ -9,6 +9,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent / '..' / 'src'))
 from model import NeuralAudioCodec
+from paths import get_dataset_paths
 
 try:
     from pesq import pesq
@@ -17,7 +18,7 @@ except:
     HAS_PESQ = False
 
 # Get first 10 test files
-test_path = Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/test-clean')
+test_path = get_dataset_paths()["test_clean"]
 test_files = sorted(list(test_path.glob('**/*.flac')))[:10]
 print(f"Testing with {len(test_files)} files\n")
 

@@ -15,6 +15,7 @@ from tqdm import tqdm
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
 
 SR = 16000
 DEFAULT_SEG_SEC = 4.0
@@ -161,7 +162,7 @@ def main():
     print(f"✓ Model loaded")
     
     # Load dataset
-    dataset_root = Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100')
+    dataset_root = get_dataset_paths()["train_clean_100"]
     audio_files = list(dataset_root.rglob('*.flac'))[:5000]
     random.shuffle(audio_files)
     

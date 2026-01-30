@@ -22,6 +22,7 @@ logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
 
 # Config
 SR = 16000
@@ -55,9 +56,10 @@ def pick_segment(audio: np.ndarray, seg_len: int) -> np.ndarray:
 
 def load_random_files(limit=N_SAMPLES):
     """Load random audio files"""
-    data_dir = Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/test-clean')
+    paths = get_dataset_paths()
+    data_dir = paths["test_clean"]
     if not data_dir.exists():
-        data_dir = Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100')
+        data_dir = paths["train_clean_100"]
     
     files = list(data_dir.rglob('*.flac'))
     random.shuffle(files)

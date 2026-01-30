@@ -12,11 +12,9 @@ from pystoi import stoi
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
 
-DATA_ROOTS = [
-    Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/test-clean'),
-    Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100'),
-]
+DATA_ROOTS = []
 SR = 16000
 DEFAULT_SEG_SEC = 4.0  # longer segment for reliable STOI/PESQ
 DEFAULT_N_FILES = 10
@@ -73,6 +71,8 @@ def main():
     # pick dataset root
     data_root = args.data_root
     if data_root is None:
+        paths = get_dataset_paths()
+        DATA_ROOTS.extend([paths["test_clean"], paths["train_clean_100"]])
         for root in DATA_ROOTS:
             if root.exists():
                 data_root = root

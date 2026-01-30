@@ -19,6 +19,7 @@ from datetime import datetime
 import soundfile as sf
 
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
 
 def estimate_pesq(ref, deg, sr=16000):
     """Scipy-based PESQ approximation"""
@@ -155,7 +156,7 @@ def main():
     print(f"✅ V3 model loaded")
     
     # Load test data (use train-clean-100 if test doesn't exist)
-    audio_dir = Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100')
+    audio_dir = get_dataset_paths()["train_clean_100"]
     if not audio_dir.exists():
         print(f"❌ Dataset not found: {audio_dir}")
         return

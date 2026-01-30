@@ -12,6 +12,7 @@ from pystoi import stoi
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ckpt_path = Path('checkpoints_large/best_large_model.pt')
@@ -23,7 +24,7 @@ model.load_state_dict(ckpt['model_state_dict'])
 model.eval()
 
 # Load test files
-data_root = Path('/mnt/Data/muaw1874/datasets/LibriSpeech/train-clean-100')
+data_root = get_dataset_paths()["train_clean_100"]
 files = list(data_root.rglob('*.flac'))
 random.shuffle(files)
 files = files[:20]

@@ -20,6 +20,7 @@ logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
 
 # Config
 SR = 16000
@@ -129,10 +130,11 @@ def main():
     logger.info(f"Segment length: {SEG_LEN} samples ({SEG_LEN/SR:.1f}s)")
     
     # Load test files
-    test_clean = Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/test-clean')
+    paths = get_dataset_paths()
+    test_clean = paths["test_clean"]
     if not test_clean.exists():
         logger.error("Test-clean not found, using train-clean-100")
-        test_clean = Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100')
+        test_clean = paths["train_clean_100"]
     
     audio_files = sorted(test_clean.rglob('*.flac'))[:N_FILES]
     logger.info(f"\nLoaded {len(audio_files)} test files")
