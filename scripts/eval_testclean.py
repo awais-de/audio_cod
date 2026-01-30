@@ -58,14 +58,11 @@ def load_model(checkpoint_path):
     
     try:
         # Try loading with weights_only=False for older checkpoints
-        if 'V3' in checkpoint_path:
-            state_dict = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
-            if isinstance(state_dict, dict) and 'model_state_dict' in state_dict:
-                model.load_state_dict(state_dict['model_state_dict'])
-            else:
-                model.load_state_dict(state_dict)
+        state_dict = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
+        # Handle checkpoints saved with metadata wrapper
+        if isinstance(state_dict, dict) and 'model_state_dict' in state_dict:
+            model.load_state_dict(state_dict['model_state_dict'])
         else:
-            state_dict = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
             model.load_state_dict(state_dict)
     except Exception as e:
         print(f"Error loading {checkpoint_path}: {e}")
