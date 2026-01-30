@@ -12,15 +12,60 @@ import shutil
 from pathlib import Path
 import json
 
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
 class SetupManager:
     def __init__(self):
         self.os_type = platform.system()  # 'Linux', 'Darwin' (macOS), 'Windows'
         self.project_root = Path(__file__).parent
+        self.project_parent = self.project_root.parent  # Parent directory (ac_proj)
         self.venv_path = self.project_root / 'venv'
         self.python_exe = sys.executable
         self.checks_passed = []
         self.checks_failed = []
         self.warnings = []
+        
+        # Load configuration
+        self.config = self.load_config()
+        self.resolve_dataset_paths()
+
+    def load_config(self):
+        """Load configuration from paths.yaml"""
+        config_file = self.project_root / 'config' / 'paths.yaml'
+        
+        if config_file.exists() and yaml:
+            try:
+                with open(config_file, 'r') as f:
+                    return yaml.safe_load(f)
+            except Exception as e:
+                self.print_warning(f"Failed to load config from {config_file}: {e}")
+                return {}
+        else:
+            if not config_file.exists():
+                self.print_warning(f"Config file not found: {config_file}")
+            elif not yaml:
+                self.print_warning("PyYAML not available, using default paths")
+            return {}
+
+    def resolve_dataset_paths(self):
+        """Resolve dataset paths relative to project parent directory"""
+        if not self.config:
+            # Use default paths if config not available
+            self.datasets_root = self.project_parent / 'datasets'
+            self.train_clean_100 = self.datasets_root / 'LibriSpeech' / 'train-clean-100'
+            self.test_clean = self.datasets_root / 'LibriSpeech' / 'test-clean'
+        else:
+            # Resolve paths from config relative to project parent
+            datasets_cfg = self.config.get('datasets', {})
+            root_cfg = datasets_cfg.get('librispeech', {})
+            
+            # Resolve relative paths
+            self.datasets_root = (self.project_parent / datasets_cfg.get('root', '../datasets')).resolve()
+            self.train_clean_100 = (self.project_parent / root_cfg.get('train_clean_100', '../datasets/LibriSpeech/train-clean-100')).resolve()
+            self.test_clean = (self.project_parent / root_cfg.get('test_clean', '../datasets/LibriSpeech/test-clean')).resolve()
 
     def print_header(self, text):
         """Print formatted header"""
@@ -230,10 +275,11 @@ class SetupManager:
         """Check if required datasets exist"""
         self.print_header("STEP 4: Dataset Verification")
 
-        datasets_root = self.project_root / 'datasets' / 'LibriSpeech'
+        self.print_info(f"Datasets root: {self.datasets_root}")
+        
         datasets_found = {
-            'train-clean-100': datasets_root / 'train-clean-100',
-            'test-clean': datasets_root / 'test-clean',
+            'train-clean-100': self.train_clean_100,
+            'test-clean': self.test_clean,
         }
 
         found_count = 0
@@ -248,7 +294,7 @@ class SetupManager:
 
         if found_count == 0:
             print("\nTo download LibriSpeech datasets:")
-            print("  mkdir -p datasets && cd datasets")
+            print(f"  mkdir -p {self.datasets_root} && cd {self.datasets_root}")
             print("  wget https://www.openslr.org/resources/12/train-clean-100.tar.gz")
             print("  wget https://www.openslr.org/resources/12/test-clean.tar.gz")
             print("  tar -xzf train-clean-100.tar.gz")

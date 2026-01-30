@@ -1,0 +1,36 @@
+# Dataset and Project Path Configuration
+# This file is automatically resolved at runtime based on the project structure
+# It enables idempotent setup across different systems and environments
+
+# Dataset paths (relative to project root parent directory)
+# The 'datasets' directory is a sibling to the 'audio_cod' project root
+datasets:
+  root: "../datasets"  # Sibling directory to this project
+  librispeech:
+    root: "../datasets/LibriSpeech"
+    train_clean_100: "../datasets/LibriSpeech/train-clean-100"
+    test_clean: "../datasets/LibriSpeech/test-clean"
+
+# Checkpoint paths (relative to project root)
+checkpoints:
+  root: "checkpoints_emergency"
+  phase1: "checkpoints_emergency/phase1_multiscale_*"
+  phase2: "checkpoints_emergency/phase2_perceptual_*"
+  phase3: "checkpoints_emergency/phase3_extended_data_*"
+  phase4: "checkpoints_emergency/phase4_adversarial_*"
+
+# Script paths (relative to project root)
+scripts:
+  eval_testclean: "scripts/eval_testclean.py"
+  eval_synthetic: "scripts/eval_synthetic.py"
+  demo_server: "scripts/demo_server.py"
+  demo_client: "scripts/demo_client.py"
+  ams_codec: "scripts/ams_codec.py"
+
+# Model configuration
+model:
+  d_model: 384
+  n_layers: 6
+  n_heads: 8
+  hop_length: 160
+  sample_rate: 16000
