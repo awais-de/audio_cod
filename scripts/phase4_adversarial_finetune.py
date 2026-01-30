@@ -22,6 +22,8 @@ from datetime import datetime
 import logging
 import json
 import random
+from tqdm import tqdm
+import time
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,7 +52,10 @@ class SimpleDiscriminator(nn.Module):
         self.classifier = nn.Linear(128, 1)
     
     def forward(self, x):
-        x = x.squeeze(1) if x.dim() == 3 else x
+        # x shape: [batch, channels, length]
+        # Average over channels to get [batch, 1, length]
+        if x.shape[1] > 1:
+            x = x.mean(dim=1, keepdim=True)
         x = self.net(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
@@ -62,35 +67,21 @@ class PerceptualLoss(nn.Module):
     def __init__(self, sr=16000, n_mels=128, n_fft=1024, hop_length=256):
         super().__init__()
         self.sr = sr
-        self.mel_scale = torchaudio.transforms.MelScale(
-            n_mels=n_mels,
+        self.mel_spectrogram = torchaudio.transforms.MelSpectrogram(
             sample_rate=sr,
             n_fft=n_fft,
+            hop_length=hop_length,
+            n_mels=n_mels,
             f_min=0,
             f_max=sr // 2
         )
-        self.n_fft = n_fft
-        self.hop_length = hop_length
     
     def forward(self, pred, target):
         pred = pred.squeeze(1) if pred.dim() == 3 else pred
         target = target.squeeze(1) if target.dim() == 3 else target
         
-        window = torch.hann_window(self.n_fft, device=pred.device)
-        pred_spec = torch.stft(
-            pred, n_fft=self.n_fft, hop_length=self.hop_length,
-            window=window, return_complex=True, center=True
-        )
-        target_spec = torch.stft(
-            target, n_fft=self.n_fft, hop_length=self.hop_length,
-            window=window, return_complex=True, center=True
-        )
-        
-        pred_mag = torch.abs(pred_spec)
-        target_mag = torch.abs(target_spec)
-        
-        pred_mel = self.mel_scale(pred_mag)
-        target_mel = self.mel_scale(target_mag)
+        pred_mel = self.mel_spectrogram(pred)
+        target_mel = self.mel_spectrogram(target)
         
         pred_mel_log = torch.log(pred_mel + 1e-9)
         target_mel_log = torch.log(target_mel + 1e-9)
@@ -147,14 +138,16 @@ class AudioDataset(Dataset):
 
 
 def train_epoch(model, discriminator, dataloader, optimizer_g, optimizer_d, criterion_recon, criterion_adv, device, epoch, log_interval=50):
-    """Train one epoch with adversarial loss"""
+    """Train one epoch with adversarial loss and progress bar"""
     model.train()
     discriminator.train()
     total_loss_g = 0
     total_loss_d = 0
     num_batches = 0
     
-    for batch_idx, audio in enumerate(dataloader):
+    pbar = tqdm(dataloader, desc=f'Epoch {epoch}/30', unit='batch', ncols=100)
+    
+    for batch_idx, audio in enumerate(pbar):
         audio = audio.to(device)
         
         if torch.isnan(audio).any():
@@ -222,14 +215,12 @@ def train_epoch(model, discriminator, dataloader, optimizer_g, optimizer_d, crit
         total_loss_d += loss_d.item()
         num_batches += 1
         
-        if batch_idx % log_interval == 0 and batch_idx > 0:
+        # Update progress bar
+        if num_batches > 0:
             avg_g = total_loss_g / num_batches
-            avg_d = total_loss_d / num_batches
-            logger.info(
-                f"Epoch {epoch} [{batch_idx}/{len(dataloader)}] "
-                f"Loss_G: {loss_g.item():.6f} (avg: {avg_g:.6f}) | "
-                f"Loss_D: {loss_d.item():.6f} (avg: {avg_d:.6f})"
-            )
+            pbar.set_postfix({'loss': avg_g})
+    
+    pbar.close()
     
     if num_batches == 0:
         return float('inf'), float('inf')
