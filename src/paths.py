@@ -64,3 +64,30 @@ def get_dataset_paths() -> Dict[str, Path]:
         "train_clean_100": train_clean_100,
         "test_clean": test_clean,
     }
+
+
+def get_checkpoint_paths() -> Dict[str, Path]:
+    config = load_paths_config()
+    root = _project_root()
+
+    if not config:
+        checkpoints_root = root / "checkpoints_emergency"
+        return {
+            "root": checkpoints_root.resolve(),
+            "v3_baseline": (checkpoints_root / "V3.pt").resolve(),
+            "phase1": (checkpoints_root / "phase1_multiscale_20260129_124452" / "best.pt").resolve(),
+            "phase2": (checkpoints_root / "phase2_perceptual_20260129_210723" / "best.pt").resolve(),
+            "phase3": (checkpoints_root / "phase3_extended_data_20260129_213522" / "best.pt").resolve(),
+            "phase4": (checkpoints_root / "phase4_adversarial_20260130_063348" / "best.pt").resolve(),
+        }
+
+    checkpoints_cfg = config.get("checkpoints", {})
+
+    return {
+        "root": _resolve_path(checkpoints_cfg.get("root", "checkpoints_emergency"), root),
+        "v3_baseline": _resolve_path(checkpoints_cfg.get("v3_baseline", "checkpoints_emergency/V3.pt"), root),
+        "phase1": _resolve_path(checkpoints_cfg.get("phase1", "checkpoints_emergency/phase1_multiscale_20260129_124452/best.pt"), root),
+        "phase2": _resolve_path(checkpoints_cfg.get("phase2", "checkpoints_emergency/phase2_perceptual_20260129_210723/best.pt"), root),
+        "phase3": _resolve_path(checkpoints_cfg.get("phase3", "checkpoints_emergency/phase3_extended_data_20260129_213522/best.pt"), root),
+        "phase4": _resolve_path(checkpoints_cfg.get("phase4", "checkpoints_emergency/phase4_adversarial_20260130_063348/best.pt"), root),
+    }

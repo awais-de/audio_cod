@@ -9,6 +9,9 @@ from pathlib import Path
 from tqdm import tqdm
 import sys
 
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+from paths import get_dataset_paths
+
 def convert_flac_to_wav(input_dir, output_dir=None):
     """Convert all FLAC files in input_dir to WAV format."""
     
@@ -55,5 +58,5 @@ def convert_flac_to_wav(input_dir, output_dir=None):
     return output_path
 
 if __name__ == '__main__':
-    input_dir = '/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/test-clean'
+    input_dir = str(get_dataset_paths()["test_clean"])
     output_dir = convert_flac_to_wav(input_dir)

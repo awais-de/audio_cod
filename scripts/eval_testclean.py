@@ -18,7 +18,7 @@ warnings.filterwarnings('ignore')
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 from model import NeuralAudioCodec
-from paths import get_dataset_paths
+from paths import get_dataset_paths, get_checkpoint_paths
 
 # PESQ and STOI imports
 try:
@@ -42,12 +42,13 @@ SEG_LEN = 16000  # 1 second at 16kHz
 NUM_SAMPLES = 50  # Evaluate on 50 test samples
 
 # Model checkpoints
+_ckpt_paths = get_checkpoint_paths()
 CHECKPOINTS = {
-    'V3 Baseline': '/home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/V3.pt',
-    'Phase 1': '/home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase1_multiscale_20260129_124452/best.pt',
-    'Phase 2': '/home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase2_perceptual_20260129_210723/best.pt',
-    'Phase 3': '/home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase3_extended_data_20260129_213522/best.pt',
-    'Phase 4': '/home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase4_adversarial_20260130_063348/best.pt',
+    'V3 Baseline': str(_ckpt_paths['v3_baseline']),
+    'Phase 1': str(_ckpt_paths['phase1']),
+    'Phase 2': str(_ckpt_paths['phase2']),
+    'Phase 3': str(_ckpt_paths['phase3']),
+    'Phase 4': str(_ckpt_paths['phase4']),
 }
 
 def load_model(checkpoint_path):

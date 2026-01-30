@@ -19,6 +19,7 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
 from scipy import signal
 
 # Set seeds
@@ -276,7 +277,7 @@ def main():
     
     # Dataset
     print(f"\n=== Loading dataset ===")
-    dataset_path = Path("/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100")
+    dataset_path = get_dataset_paths()["train_clean_100"]
     
     dataset = AudioDataset(dataset_path, sr=sr, segment_length=segment_length, n_files=1500)
     

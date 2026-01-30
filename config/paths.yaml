@@ -14,10 +14,11 @@ datasets:
 # Checkpoint paths (relative to project root)
 checkpoints:
   root: "checkpoints_emergency"
-  phase1: "checkpoints_emergency/phase1_multiscale_*"
-  phase2: "checkpoints_emergency/phase2_perceptual_*"
-  phase3: "checkpoints_emergency/phase3_extended_data_*"
-  phase4: "checkpoints_emergency/phase4_adversarial_*"
+  v3_baseline: "checkpoints_emergency/V3.pt"
+  phase1: "checkpoints_emergency/phase1_multiscale_20260129_124452/best.pt"
+  phase2: "checkpoints_emergency/phase2_perceptual_20260129_210723/best.pt"
+  phase3: "checkpoints_emergency/phase3_extended_data_20260129_213522/best.pt"
+  phase4: "checkpoints_emergency/phase4_adversarial_20260130_063348/best.pt"
 
 # Script paths (relative to project root)
 scripts:

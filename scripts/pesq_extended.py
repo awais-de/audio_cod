@@ -18,6 +18,7 @@ from pystoi import stoi
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
 
 TMPDIR_PATH = Path("/mnt/Data/muaw1874/tmp")
 TMPDIR_PATH.mkdir(parents=True, exist_ok=True)
@@ -154,7 +155,7 @@ def main():
     if 'optimizer_state_dict' in ckpt:
         optimizer.load_state_dict(ckpt['optimizer_state_dict'])
 
-    dataset = AudioDataset('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100', segment_length=8000)
+    dataset = AudioDataset(str(get_dataset_paths()["train_clean_100"]), segment_length=8000)
     train_loader = DataLoader(dataset, batch_size=16, shuffle=True, num_workers=0, pin_memory=False, drop_last=True)
     val_loader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
 

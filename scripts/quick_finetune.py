@@ -16,6 +16,7 @@ from pathlib import Path
 import yaml
 import numpy as np
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
 import soundfile as sf
 from tqdm import tqdm
 
@@ -187,7 +188,7 @@ def main():
     
     # Data - reduced batch size and segment length for memory efficiency
     print("Loading data...")
-    dataset = AudioDataset('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100', segment_length=8000)  # 0.5s instead of 1s
+    dataset = AudioDataset(str(get_dataset_paths()["train_clean_100"]), segment_length=8000)  # 0.5s instead of 1s
     train_loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=0, pin_memory=False, drop_last=True)  # num_workers=0 to avoid /tmp issues
     val_loader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
     

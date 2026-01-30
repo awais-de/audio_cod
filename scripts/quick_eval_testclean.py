@@ -25,8 +25,9 @@ print(f"Testing with {len(test_files)} files\n")
 # Load model
 print("Loading Phase 1 model...")
 model = NeuralAudioCodec(d_model=384, n_layers=6)
+_ckpt = str(get_checkpoint_paths()['phase1'])
 state_dict = torch.load(
-    '/home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase1_multiscale_20260129_124452/best.pt',
+    _ckpt,
     map_location='cpu', weights_only=False
 )
 model.load_state_dict(state_dict)

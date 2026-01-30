@@ -32,6 +32,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from src.model import NeuralAudioCodec
+from src.paths import get_dataset_paths
 
 
 class PerceptualLoss(nn.Module):
@@ -279,7 +280,7 @@ def main():
         return
     
     # Dataset
-    audio_dir = Path('/home/muaw1874/Desktop/ac_proj/datasets/LibriSpeech/train-clean-100')
+    audio_dir = get_dataset_paths()["train_clean_100"]
     if not audio_dir.exists():
         logger.error(f"❌ Dataset not found: {audio_dir}")
         return
