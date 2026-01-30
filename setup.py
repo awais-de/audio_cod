@@ -68,14 +68,15 @@ class SetupManager:
     # STEP 1: Virtual Environment
     # =========================================================================
     def setup_venv(self):
-        """Create and activate virtual environment"""
+        """Check for existing venv or create new one"""
         self.print_header("STEP 1: Virtual Environment Setup")
 
         if self.venv_path.exists():
-            self.print_info(f"Virtual environment already exists: {self.venv_path}")
+            self.print_success(f"Virtual environment already exists: {self.venv_path}")
+            self.print_info(f"Using existing venv with Python: {self.get_python_exe()}")
             return True
 
-        print(f"Creating virtual environment at {self.venv_path}...")
+        print(f"Virtual environment not found. Creating at {self.venv_path}...")
         success, output = self.run_command(
             [sys.executable, "-m", "venv", str(self.venv_path)]
         )
@@ -105,12 +106,30 @@ class SetupManager:
         else:
             return str(self.venv_path / 'bin' / 'python')
 
+    def verify_venv_usable(self):
+        """Verify that the venv is usable"""
+        python_exe = self.get_python_exe()
+        if not Path(python_exe).exists():
+            return False, "Python executable not found in venv"
+        
+        success, output = self.run_command([python_exe, "--version"], capture=True)
+        return success, output.strip() if success else "Failed to verify venv"
+
     # =========================================================================
     # STEP 2: Dependencies
     # =========================================================================
     def install_dependencies(self):
         """Install all Python dependencies from requirements.txt"""
         self.print_header("STEP 2: Installing Python Dependencies")
+
+        # Verify venv is usable
+        usable, msg = self.verify_venv_usable()
+        if not usable:
+            self.print_error(f"Virtual environment not usable: {msg}")
+            return False
+        
+        python_exe = self.get_python_exe()
+        self.print_info(f"Using Python: {python_exe}")
 
         requirements_file = self.project_root / 'requirements.txt'
         if not requirements_file.exists():
