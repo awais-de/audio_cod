@@ -1,55 +1,35 @@
 # =============================================================================
 # Neural Audio Codec - Complete Requirements
+# Python 3.8+ Required
 # =============================================================================
 
 # Core Deep Learning Framework
 # =============================================================================
-torch>=2.10.0,<2.11.0
-torchvision>=0.15.0
-torchaudio>=2.10.0
+torch>=2.0.0
+torchaudio>=2.0.0
 
 # Scientific Computing & Data Processing
 # =============================================================================
 numpy>=1.24.0,<2.0.0
 scipy>=1.10.0
-scikit-learn>=1.3.0
 
-# Audio Processing & Codec Support
+# Audio Processing
 # =============================================================================
 soundfile>=0.12.1
-librosa>=0.10.0
-# torchcodec>=0.2.0  # Optional: for advanced codec support
+PyAudio>=0.2.13
 
 # Configuration Management
 # =============================================================================
 pyyaml>=6.0
-python-dotenv>=1.0.0
 
 # Progress & Logging
 # =============================================================================
 tqdm>=4.66.0
-tensorboard>=2.13.0
 
 # Audio Quality Metrics (CRITICAL for evaluation)
 # =============================================================================
 pesq>=0.0.4
 pystoi>=0.3.3
-
-# Visualization
-# =============================================================================
-matplotlib>=3.7.0
-seaborn>=0.12.0
-
-# Testing & Validation
-# =============================================================================
-pytest>=7.4.0
-
-# Development Tools (Optional)
-# =============================================================================
-# black>=23.0.0         # Code formatting
-# flake8>=6.0.0         # Linting
-# isort>=5.12.0         # Import sorting
-# mypy>=1.4.0           # Type checking
 
 # =============================================================================
 # Installation Instructions
@@ -57,18 +37,20 @@ pytest>=7.4.0
 # Basic installation:
 #   pip install -r requirements.txt
 #
-# With audio codec support (requires FFmpeg):
-#   # Install FFmpeg first:
-#   # Ubuntu/Debian: sudo apt-get install ffmpeg
-#   # macOS: brew install ffmpeg
-#   # Windows: Download from https://ffmpeg.org/download.html
-#   pip install -r requirements.txt torchcodec
+# For PyAudio on macOS:
+#   brew install portaudio
+#   pip install pyaudio
 #
-# Minimal installation (without quality metrics):
-#   pip install torch torchaudio tqdm numpy scipy
+# For PyAudio on Ubuntu/Debian:
+#   sudo apt-get install portaudio19-dev python3-pyaudio
+#   pip install pyaudio
+#
+# For PyAudio on Windows:
+#   pip install pipwin
+#   pipwin install pyaudio
 #
 # GPU Support (CUDA 12.1):
-#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
 #
-# Development installation:
-#   pip install -r requirements.txt pytest black flake8 isort mypy
+# GPU Support (CUDA 11.8):
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu118
