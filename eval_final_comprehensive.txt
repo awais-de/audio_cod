@@ -1,4 +1,0 @@
-checkpoint=checkpoints_emergency/best_pesq_finetune.pt
-files=20
-PESQ=1.771
-STOI=0.581

@@ -76,3 +76,6 @@ output_audio/
 .env.local
 .env.*.local
 config/.env
+
+# Backup directory (excluded from submission)
+backup/

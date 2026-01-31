@@ -1,49 +1,0 @@
-================================================================================
-EVALUATION ON SYNTHETIC AUDIO (No FFmpeg Dependency)
-================================================================================
-Device: cuda
-Sample length: 16000 samples (1.0s at 16000Hz)
-Num samples: 50
-
-Generating synthetic audio...
-Generated 50 synthetic audio samples
-
-Evaluating Phase 1...
-Checkpoint: /home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase1_multiscale_20260129_124452/best.pt
-Evaluating:   0%|          | 0/50 [00:00<?, ?sample/s]Evaluating:   2%|▏         | 1/50 [00:00<00:17,  2.81sample/s]Evaluating:   8%|▊         | 4/50 [00:00<00:05,  9.12sample/s]Evaluating:  12%|█▏        | 6/50 [00:00<00:04,  9.66sample/s]Evaluating:  16%|█▌        | 8/50 [00:00<00:04,  9.84sample/s]Evaluating:  20%|██        | 10/50 [00:01<00:03, 10.04sample/s]Evaluating:  24%|██▍       | 12/50 [00:01<00:03, 10.18sample/s]Evaluating:  28%|██▊       | 14/50 [00:01<00:03, 10.15sample/s]Evaluating:  32%|███▏      | 16/50 [00:01<00:03, 10.15sample/s]Evaluating:  36%|███▌      | 18/50 [00:01<00:03, 10.14sample/s]Evaluating:  40%|████      | 20/50 [00:02<00:02, 10.24sample/s]Evaluating:  44%|████▍     | 22/50 [00:02<00:02, 10.51sample/s]Evaluating:  50%|█████     | 25/50 [00:02<00:01, 13.34sample/s]Evaluating:  56%|█████▌    | 28/50 [00:02<00:01, 15.65sample/s]Evaluating:  62%|██████▏   | 31/50 [00:02<00:01, 17.47sample/s]Evaluating:  66%|██████▌   | 33/50 [00:02<00:01, 16.89sample/s]Evaluating:  70%|███████   | 35/50 [00:02<00:01, 14.41sample/s]Evaluating:  74%|███████▍  | 37/50 [00:03<00:01, 12.94sample/s]Evaluating:  78%|███████▊  | 39/50 [00:03<00:00, 12.14sample/s]Evaluating:  82%|████████▏ | 41/50 [00:03<00:00, 11.56sample/s]Evaluating:  86%|████████▌ | 43/50 [00:03<00:00, 11.10sample/s]Evaluating:  90%|█████████ | 45/50 [00:03<00:00, 10.80sample/s]Evaluating:  94%|█████████▍| 47/50 [00:04<00:00, 10.64sample/s]Evaluating:  98%|█████████▊| 49/50 [00:04<00:00, 10.58sample/s]Evaluating: 100%|██████████| 50/50 [00:04<00:00, 11.27sample/s]
-  ✅ PESQ: 2.9919 ± 0.0102 (50 samples)
-  ✅ STOI: 0.9476 ± 0.0031 (50 samples)
-
-Evaluating Phase 2...
-Checkpoint: /home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase2_perceptual_20260129_210723/best.pt
-Evaluating:   0%|          | 0/50 [00:00<?, ?sample/s]Evaluating:   6%|▌         | 3/50 [00:00<00:02, 22.36sample/s]Evaluating:  12%|█▏        | 6/50 [00:00<00:01, 22.50sample/s]Evaluating:  18%|█▊        | 9/50 [00:00<00:02, 14.97sample/s]Evaluating:  22%|██▏       | 11/50 [00:00<00:02, 13.07sample/s]Evaluating:  26%|██▌       | 13/50 [00:00<00:03, 12.15sample/s]Evaluating:  30%|███       | 15/50 [00:01<00:03, 11.54sample/s]Evaluating:  34%|███▍      | 17/50 [00:01<00:02, 11.06sample/s]Evaluating:  38%|███▊      | 19/50 [00:01<00:02, 10.76sample/s]Evaluating:  42%|████▏     | 21/50 [00:01<00:02, 10.61sample/s]Evaluating:  46%|████▌     | 23/50 [00:01<00:02, 10.56sample/s]Evaluating:  50%|█████     | 25/50 [00:02<00:02, 11.05sample/s]Evaluating:  56%|█████▌    | 28/50 [00:02<00:01, 13.81sample/s]Evaluating:  62%|██████▏   | 31/50 [00:02<00:01, 16.04sample/s]Evaluating:  68%|██████▊   | 34/50 [00:02<00:00, 17.78sample/s]Evaluating:  72%|███████▏  | 36/50 [00:02<00:00, 16.18sample/s]Evaluating:  76%|███████▌  | 38/50 [00:02<00:00, 14.01sample/s]Evaluating:  80%|████████  | 40/50 [00:03<00:00, 12.76sample/s]Evaluating:  84%|████████▍ | 42/50 [00:03<00:00, 12.03sample/s]Evaluating:  88%|████████▊ | 44/50 [00:03<00:00, 11.48sample/s]Evaluating:  92%|█████████▏| 46/50 [00:03<00:00, 11.05sample/s]Evaluating:  96%|█████████▌| 48/50 [00:03<00:00, 10.77sample/s]Evaluating: 100%|██████████| 50/50 [00:03<00:00, 10.63sample/s]Evaluating: 100%|██████████| 50/50 [00:03<00:00, 12.51sample/s]
-  ✅ PESQ: 2.9860 ± 0.0095 (50 samples)
-  ✅ STOI: 0.9458 ± 0.0029 (50 samples)
-
-Evaluating Phase 3...
-Checkpoint: /home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase3_extended_data_20260129_213522/best.pt
-Evaluating:   0%|          | 0/50 [00:00<?, ?sample/s]Evaluating:   6%|▌         | 3/50 [00:00<00:02, 22.76sample/s]Evaluating:  12%|█▏        | 6/50 [00:00<00:01, 22.67sample/s]Evaluating:  18%|█▊        | 9/50 [00:00<00:01, 20.72sample/s]Evaluating:  24%|██▍       | 12/50 [00:00<00:02, 14.76sample/s]Evaluating:  28%|██▊       | 14/50 [00:00<00:02, 13.13sample/s]Evaluating:  32%|███▏      | 16/50 [00:01<00:02, 12.26sample/s]Evaluating:  36%|███▌      | 18/50 [00:01<00:02, 11.56sample/s]Evaluating:  40%|████      | 20/50 [00:01<00:02, 11.10sample/s]Evaluating:  44%|████▍     | 22/50 [00:01<00:02, 10.79sample/s]Evaluating:  48%|████▊     | 24/50 [00:01<00:02, 10.69sample/s]Evaluating:  52%|█████▏    | 26/50 [00:02<00:02, 10.57sample/s]Evaluating:  56%|█████▌    | 28/50 [00:02<00:01, 11.88sample/s]Evaluating:  62%|██████▏   | 31/50 [00:02<00:01, 14.56sample/s]Evaluating:  68%|██████▊   | 34/50 [00:02<00:00, 16.67sample/s]Evaluating:  74%|███████▍  | 37/50 [00:02<00:00, 18.25sample/s]Evaluating:  78%|███████▊  | 39/50 [00:02<00:00, 15.26sample/s]Evaluating:  82%|████████▏ | 41/50 [00:02<00:00, 13.49sample/s]Evaluating:  86%|████████▌ | 43/50 [00:03<00:00, 12.46sample/s]Evaluating:  90%|█████████ | 45/50 [00:03<00:00, 11.83sample/s]Evaluating:  94%|█████████▍| 47/50 [00:03<00:00, 11.28sample/s]Evaluating:  98%|█████████▊| 49/50 [00:03<00:00, 10.92sample/s]Evaluating: 100%|██████████| 50/50 [00:03<00:00, 12.89sample/s]
-  ✅ PESQ: 2.9119 ± 0.0125 (50 samples)
-  ✅ STOI: 0.9236 ± 0.0038 (50 samples)
-
-Evaluating Phase 4...
-Checkpoint: /home/muaw1874/Desktop/ac_proj/audio_cod/checkpoints_emergency/phase4_adversarial_20260130_063348/best.pt
-Evaluating:   0%|          | 0/50 [00:00<?, ?sample/s]Evaluating:   6%|▌         | 3/50 [00:00<00:02, 22.79sample/s]Evaluating:  12%|█▏        | 6/50 [00:00<00:01, 22.66sample/s]Evaluating:  18%|█▊        | 9/50 [00:00<00:01, 21.50sample/s]Evaluating:  24%|██▍       | 12/50 [00:00<00:02, 14.99sample/s]Evaluating:  28%|██▊       | 14/50 [00:00<00:02, 13.24sample/s]Evaluating:  32%|███▏      | 16/50 [00:01<00:02, 12.33sample/s]Evaluating:  36%|███▌      | 18/50 [00:01<00:02, 11.67sample/s]Evaluating:  40%|████      | 20/50 [00:01<00:02, 11.16sample/s]Evaluating:  44%|████▍     | 22/50 [00:01<00:02, 10.82sample/s]Evaluating:  48%|████▊     | 24/50 [00:01<00:02, 10.66sample/s]Evaluating:  52%|█████▏    | 26/50 [00:02<00:02, 10.55sample/s]Evaluating:  56%|█████▌    | 28/50 [00:02<00:01, 11.57sample/s]Evaluating:  62%|██████▏   | 31/50 [00:02<00:01, 14.28sample/s]Evaluating:  68%|██████▊   | 34/50 [00:02<00:00, 16.44sample/s]Evaluating:  74%|███████▍  | 37/50 [00:02<00:00, 18.09sample/s]Evaluating:  78%|███████▊  | 39/50 [00:02<00:00, 15.68sample/s]Evaluating:  82%|████████▏ | 41/50 [00:02<00:00, 13.72sample/s]Evaluating:  86%|████████▌ | 43/50 [00:03<00:00, 12.60sample/s]Evaluating:  90%|█████████ | 45/50 [00:03<00:00, 11.93sample/s]Evaluating:  94%|█████████▍| 47/50 [00:03<00:00, 11.35sample/s]Evaluating:  98%|█████████▊| 49/50 [00:03<00:00, 10.97sample/s]Evaluating: 100%|██████████| 50/50 [00:03<00:00, 12.94sample/s]
-  ✅ PESQ: 2.9091 ± 0.0129 (50 samples)
-  ✅ STOI: 0.9227 ± 0.0039 (50 samples)
-
-================================================================================
-COMPARISON TABLE
-================================================================================
-Model                     PESQ                 STOI                
---------------------------------------------------------------------------------
-Phase 1                   2.9919±0.0102        0.9476±0.0031       
-Phase 2                   2.9860±0.0095        0.9458±0.0029       
-Phase 3                   2.9119±0.0125        0.9236±0.0038       
-Phase 4                   2.9091±0.0129        0.9227±0.0039       
-================================================================================
-
-✅ EVALUATION COMPLETE
-
-Note: Evaluated on synthetic audio (speech-like signals).
-Real test-clean evaluation requires FFmpeg system libraries (root access).

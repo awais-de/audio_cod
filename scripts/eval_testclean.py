@@ -75,12 +75,18 @@ def load_model(checkpoint_path):
 def get_test_files():
     """Get all test-clean audio files."""
     test_path = get_dataset_paths()["test_clean"]
+    print(f"Looking for test files in: {test_path}")
+    print(f"Path exists: {test_path.exists()}")
     if not test_path.exists():
         print(f"Error: test-clean directory not found at {test_path}")
         return []
     
     audio_files = sorted(list(test_path.glob('**/*.flac')))
     print(f"Found {len(audio_files)} test-clean audio files")
+    if audio_files:
+        # Check first file dimensions
+        wf, sr = torchaudio.load(str(audio_files[0]))
+        print(f"First file: {wf.shape[1]} samples ({wf.shape[1]/sr:.2f}s) @ {sr}Hz")
     return audio_files
 
 @torch.no_grad()
@@ -92,6 +98,7 @@ def evaluate_model(model, audio_files, max_samples=None):
     pesq_scores = []
     stoi_scores = []
     error_count = 0
+    skip_count = 0
     
     for audio_file in tqdm(audio_files[:max_samples], desc='Evaluating', unit='file'):
         try:
@@ -109,6 +116,7 @@ def evaluate_model(model, audio_files, max_samples=None):
             
             # Take first 1 second
             if waveform.shape[1] < SEG_LEN:
+                skip_count += 1
                 continue  # Skip short files
             
             waveform = waveform[:, :SEG_LEN]
@@ -123,6 +131,13 @@ def evaluate_model(model, audio_files, max_samples=None):
             # Encode and decode
             reconstructed = model(waveform.unsqueeze(0))
             reconstructed = reconstructed.squeeze(0)
+            
+            # Pad reconstructed to match original length if needed
+            if reconstructed.shape[1] < waveform.shape[1]:
+                pad_amount = waveform.shape[1] - reconstructed.shape[1]
+                reconstructed = torch.nn.functional.pad(reconstructed, (0, pad_amount))
+            elif reconstructed.shape[1] > waveform.shape[1]:
+                reconstructed = reconstructed[:, :waveform.shape[1]]
             
             # Normalize reconstruction to [-1, 1]
             recon_max = torch.abs(reconstructed).max()
@@ -145,6 +160,7 @@ def evaluate_model(model, audio_files, max_samples=None):
                         pesq_scores.append(pesq_score)
                 except Exception as e:
                     error_count += 1
+                    # print(f"PESQ error: {e}")
             
             # Compute STOI
             if HAS_STOI:
@@ -156,12 +172,15 @@ def evaluate_model(model, audio_files, max_samples=None):
                     error_count += 1
         
         except Exception as e:
+            skip_count += 1
             continue
     
     return {
         'pesq': pesq_scores,
         'stoi': stoi_scores,
         'num_samples': len(pesq_scores),
+        'skip_count': skip_count,
+        'error_count': error_count,
     }
 
 def main():
@@ -200,15 +219,21 @@ def main():
         eval_result = evaluate_model(model, test_files, max_samples=NUM_SAMPLES)
         results[model_name] = eval_result
         
+        print(f"  Samples evaluated: {eval_result['num_samples']}, Skipped: {eval_result.get('skip_count', 0)}, Errors: {eval_result.get('error_count', 0)}")
+        
         if eval_result['pesq']:
             pesq_mean = np.mean(eval_result['pesq'])
             pesq_std = np.std(eval_result['pesq'])
             print(f"  ✅ PESQ: {pesq_mean:.4f} ± {pesq_std:.4f} ({eval_result['num_samples']} samples)")
+        else:
+            print(f"  ⚠️  No PESQ scores computed")
         
         if eval_result['stoi']:
             stoi_mean = np.mean(eval_result['stoi'])
             stoi_std = np.std(eval_result['stoi'])
             print(f"  ✅ STOI: {stoi_mean:.4f} ± {stoi_std:.4f} ({eval_result['num_samples']} samples)")
+        else:
+            print(f"  ⚠️  No STOI scores computed")
     
     # Print comparison table
     print("\n" + "=" * 80)
