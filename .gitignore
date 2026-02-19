@@ -80,3 +80,4 @@ config/.env
 # Backup directory (excluded from submission)
 backup/
 AC_Report.pdf
+COMPARISON_SUMMARY.md
