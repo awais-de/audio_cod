@@ -130,12 +130,13 @@ class AudioChunkDataset(IterableDataset):
 # ---------------------------------------------------------------------------
 
 def measure_real_bitrate(model: NeuralAudioCodec, audio_files, device,
-                         num_bits: int = 1, n_files: int = 5) -> float:
+                         num_bits: int = 1, n_files: int = 5,
+                         chunk_samples: int = 16000) -> float:
     """
-    Encode audio files, 1-bit quantize, zlib compress, return mean kbps.
+    Encode audio files in chunks, 1-bit quantize, zlib compress, return mean kbps.
 
-    Uses uniform 1-bit quantization (threshold at midpoint of range) to match
-    what QuantizedLatentCodec does at the 10 kbps target.
+    Audio is processed in chunk_samples-length windows (default 1s) to avoid
+    OOM from large attention matrices on long files.
     """
     model.eval()
     total_bits = 0
@@ -147,10 +148,23 @@ def measure_real_bitrate(model: NeuralAudioCodec, audio_files, device,
                 audio, sr = sf.read(path)
                 if audio.ndim > 1:
                     audio = audio.mean(axis=1)
+                audio = np.clip(audio, -1.0, 1.0).astype(np.float32)
+
+                # Process in fixed-size chunks to avoid OOM
+                latent_chunks = []
+                for start in range(0, len(audio), chunk_samples):
+                    chunk = audio[start:start + chunk_samples]
+                    if len(chunk) < 160:  # Skip sub-frame remnants
+                        continue
+                    x = torch.FloatTensor(chunk).unsqueeze(0).unsqueeze(0).to(device)
+                    z = model.encode(x)  # (1, T_latent, dim)
+                    latent_chunks.append(z.squeeze(0).cpu().numpy())
+
+                if not latent_chunks:
+                    continue
+
+                z_np = np.concatenate(latent_chunks, axis=0)  # (T_total, dim)
                 duration = len(audio) / sr
-                x = torch.FloatTensor(audio).unsqueeze(0).unsqueeze(0).to(device)  # (1,1,T)
-                z = model.encode(x)          # (1, T_latent, bottleneck_dim or d_model)
-                z_np = z.squeeze(0).cpu().numpy()  # (T_latent, dim)
 
                 # 1-bit uniform quantization
                 z_min, z_max = float(z_np.min()), float(z_np.max())
