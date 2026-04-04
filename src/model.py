@@ -238,6 +238,12 @@ class NeuralAudioCodec(nn.Module):
     """
     Complete Neural Audio Codec: Encoder + Decoder
     Total parameters: ~12M (reduced from 51.8M for faster training)
+
+    Optional bottleneck_dim compresses encoder output (d_model → bottleneck_dim)
+    before quantization and expands back (bottleneck_dim → d_model) for the decoder.
+    This is the primary bitrate control mechanism: with bottleneck_dim=32 and 1-bit
+    quantization at ~2000 Hz frame rate, raw bitrate = 32 × 1 × 2000 = 64 kbps,
+    which zlib compresses to ~8–10 kbps for correlated speech latents.
     """
     def __init__(
         self,
@@ -247,10 +253,13 @@ class NeuralAudioCodec(nn.Module):
         n_layers=4,
         n_heads=8,
         window_size=256,
-        dropout=0.1
+        dropout=0.1,
+        bottleneck_dim=None,
     ):
         super().__init__()
-        
+
+        self.bottleneck_dim = bottleneck_dim
+
         self.encoder = AudioEncoder(
             sample_rate=sample_rate,
             hop_length=hop_length,
@@ -260,7 +269,7 @@ class NeuralAudioCodec(nn.Module):
             window_size=window_size,
             dropout=dropout
         )
-        
+
         self.decoder = AudioDecoder(
             sample_rate=sample_rate,
             hop_length=hop_length,
@@ -270,7 +279,42 @@ class NeuralAudioCodec(nn.Module):
             window_size=window_size,
             dropout=dropout
         )
-    
+
+        # Bottleneck projection layers (None when bottleneck_dim is not set)
+        if bottleneck_dim is not None:
+            self.encoder_proj = nn.Linear(d_model, bottleneck_dim)
+            self.decoder_proj = nn.Linear(bottleneck_dim, d_model)
+        else:
+            self.encoder_proj = None
+            self.decoder_proj = None
+
+    def encode(self, x):
+        """
+        Encode waveform to latent representation.
+
+        Args:
+            x: (batch, 1, time) raw audio waveform
+        Returns:
+            z: (batch, T, d_model) if no bottleneck, or (batch, T, bottleneck_dim)
+        """
+        z = self.encoder(x)
+        if self.encoder_proj is not None:
+            z = self.encoder_proj(z)
+        return z
+
+    def decode(self, z):
+        """
+        Decode latent representation to waveform.
+
+        Args:
+            z: (batch, T, bottleneck_dim) or (batch, T, d_model)
+        Returns:
+            (batch, 1, time) reconstructed audio
+        """
+        if self.decoder_proj is not None:
+            z = self.decoder_proj(z)
+        return self.decoder(z)
+
     def forward(self, x):
         """
         Args:
@@ -278,6 +322,5 @@ class NeuralAudioCodec(nn.Module):
         Returns:
             (batch, 1, time) reconstructed audio
         """
-        latent = self.encoder(x)
-        reconstructed = self.decoder(latent)
-        return reconstructed
+        z = self.encode(x)
+        return self.decode(z)
