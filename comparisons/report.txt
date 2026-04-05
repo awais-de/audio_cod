@@ -1,0 +1,51 @@
+
+CODEC COMPARISON REPORT
+Generated: 2026-04-05 05:11
+================================================================
+
+Test set   : LibriSpeech test-clean (5 speakers, never seen during training)
+Clip length: 5 seconds each
+Sample rate: 16000 Hz mono
+
+PIPELINE DETAILS
+----------------
+AAC    : pyav AAC encoder (CBR) → pyav decoder → PCM
+         Note: AAC minimum bitrate at 16kHz mono is ~16 kbps (codec floor).
+
+Neural : Phase 1 encoder (d_model=384, 6 layers)
+         → Linear projection (384 → 32)
+         → 1-bit uniform quantization (global min/max per chunk)
+         → zlib compress (level 9)
+         → zlib decompress
+         → 1-bit dequantize
+         → Linear projection (32 → 384)
+         → Phase 1 decoder
+         Window size: 200 frames × 0.5ms = 100ms max latency
+
+RESULTS SUMMARY
+---------------
+Codec                   Bitrate     PESQ     STOI    Latency
+------------------------------------------------------------
+AAC (actual)              15.6k    1.490    0.497        N/A
+Neural Bottleneck         14.3k    1.550    0.515       76ms
+============================================================
+
+KEY OBSERVATIONS
+----------------
+• Neural codec operates at 14.3 kbps — below AAC's minimum floor of ~16 kbps.
+• STOI (intelligibility): neural=0.515 vs AAC=0.497
+  Neural is ahead on intelligibility.
+• PESQ (perceptual quality): neural=1.550 vs AAC=1.490
+• Neural latency: 76 ms per chunk (well below 100ms target).
+
+PER-FILE RESULTS
+----------------
+Speaker      AAC kbps   AAC PESQ   AAC STOI  Neur kbps  Neur PESQ  Neur STOI
+------------------------------------------------------------------------
+  1089           16.7      1.490      0.497       11.6      1.579      0.524
+  1188           15.4      1.501      0.500        8.0      1.521      0.506
+  1221           15.2      1.497      0.499       17.1      1.521      0.506
+  1284           15.6      1.485      0.496       14.5      1.590      0.527
+  1320           15.4      1.477      0.493       20.4      1.539      0.512
+
+Audio files saved to: /home/muaw1874/Desktop/ac_proj/audio_cod/comparisons/audio_examples
