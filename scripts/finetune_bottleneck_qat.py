@@ -177,6 +177,7 @@ def train(args):
     print(f"Base checkpoint : {args.base_checkpoint}")
     print(f"Output          : {args.output}")
     print(f"Epochs          : {args.epochs}  |  LR: {args.lr}")
+    print(f"Lambda entropy  : {args.lambda_entropy}  (temporal correlation penalty)")
     print(f"STE 1-bit quant applied in every forward pass")
     print(f"{'='*68}\n")
 
@@ -237,7 +238,15 @@ def train(args):
             z_ste = ste_quantize_1bit(z)     # quantized fwd, differentiable bwd
             x_recon = model.decode(z_ste)    # decoder sees 1-bit quantized latents
 
-            loss = multi_scale_stft_loss(x_recon, x) / args.grad_accum_steps
+            # Reconstruction loss
+            recon_loss = multi_scale_stft_loss(x_recon, x)
+
+            # Temporal entropy penalty: reward consecutive frames being similar
+            # after quantization → high temporal correlation → better zlib compression
+            temporal_diff = z_ste[:, 1:, :] - z_ste[:, :-1, :]
+            entropy_penalty = torch.mean(temporal_diff ** 2)
+
+            loss = (recon_loss + args.lambda_entropy * entropy_penalty) / args.grad_accum_steps
             loss.backward()
 
             if (batch_idx + 1) % args.grad_accum_steps == 0:
@@ -247,7 +256,11 @@ def train(args):
 
             epoch_loss += loss.item() * args.grad_accum_steps
             n_batches += 1
-            pbar.set_postfix({'loss': f'{loss.item()*args.grad_accum_steps:.5f}'})
+            pbar.set_postfix({
+                'loss': f'{loss.item()*args.grad_accum_steps:.4f}',
+                'R': f'{recon_loss.item():.4f}',
+                'E': f'{entropy_penalty.item():.4f}',
+            })
 
             if batch_idx * args.batch_size >= args.samples_per_epoch:
                 break
@@ -312,6 +325,8 @@ def main():
     parser.add_argument('--grad-accum-steps', type=int, default=4)
     parser.add_argument('--chunk-sec', type=float, default=1.0)
     parser.add_argument('--samples-per-epoch', type=int, default=1000)
+    parser.add_argument('--lambda-entropy', type=float, default=0.5,
+                        help='Weight for temporal entropy penalty (rewards zlib compressibility)')
     parser.add_argument('--device', type=str,
                         default='cuda' if torch.cuda.is_available() else 'cpu')
     args = parser.parse_args()
