@@ -1,0 +1,5 @@
+model,bitrate_kbps,pesq,stoi,latency_ms
+Bottleneck v1 (new),10.74,1.8653,0.6096,13.5
+Phase3b L2 10kbps (old best),87.58,1.8765,0.6129,6.7
+Phase1 (PESQ baseline),206.14,1.8892,0.6168,6.8
+AAC @ 10kbps (reference),12.00,2.0600,0.2400,N/A
