@@ -13,20 +13,16 @@ datasets:
 
 # Checkpoint paths (relative to project root)
 checkpoints:
-  root: "checkpoints_emergency"
-  v3_baseline: "checkpoints_emergency/pesq_balanced_v3_20260129_094112/best.pt"
-  phase1: "checkpoints_emergency/phase1_multiscale_20260129_124452/best.pt"
-  phase2: "checkpoints_emergency/phase2_perceptual_20260129_210723/best.pt"
-  phase3: "checkpoints_emergency/phase3_extended_data_20260129_213522/best.pt"
-  phase4: "checkpoints_emergency/phase4_adversarial_20260130_063348/best.pt"
+  root: "checkpoints_active"
+  phase1: "checkpoints_active/phase1_base/best.pt"
+  temporal_phaseA: "checkpoints_active/temporal_phaseA/best.pt"
+  temporal_phaseB: "checkpoints_active/temporal_phaseB/best.pt"
 
 # Script paths (relative to project root)
 scripts:
-  eval_testclean: "scripts/eval_testclean.py"
-  eval_synthetic: "scripts/eval_synthetic.py"
-  demo_server: "scripts/demo_server.py"
-  demo_client: "scripts/demo_client.py"
-  ams_codec: "scripts/ams_codec.py"
+  compare_phaseB: "scripts/compare_phaseB.py"
+  eval_bottleneck: "scripts/eval_bottleneck.py"
+  inference: "scripts/inference.py"
 
 # Model configuration
 model:

@@ -1,0 +1,22 @@
+{
+  "phase": "Phase 1",
+  "strategy": "Multi-Scale Spectral Loss",
+  "v3_checkpoint": "checkpoints_emergency/pesq_balanced_v3_20260129_094112/best.pt",
+  "fft_scales": [
+    256,
+    512,
+    1024
+  ],
+  "learning_rate": 1e-06,
+  "epochs": 20,
+  "best_loss": 8.430055480957032,
+  "model_config": {
+    "d_model": 384,
+    "n_layers": 6,
+    "n_heads": 8,
+    "window_size": 384,
+    "hop_length": 160,
+    "sample_rate": 16000
+  },
+  "checkpoint_dir": "checkpoints_emergency/phase1_multiscale_20260129_124452"
+}
