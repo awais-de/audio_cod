@@ -153,17 +153,17 @@ def load_neural_model(checkpoint_path: Path, device: str) -> NeuralAudioCodec:
 
 def neural_encode_decode(model: NeuralAudioCodec, audio: np.ndarray,
                           sr: int, device: str,
-                          chunk_sec: float = 1.0) -> tuple:
+                          chunk_sec: float = 1.0,
+                          quantize: bool = True) -> tuple:
     """
-    Full neural codec pipeline with quantization:
-      encode → 1-bit quantize → zlib compress → decompress
-      → dequantize → decode
+    Neural codec pipeline.
 
-    This matches the real deployment bitrate exactly.
+    quantize=True  → 1-bit quant + zlib (deployment pipeline, noisy without QAT)
+    quantize=False → float32 latents passed directly (clean audio, higher bitrate)
 
     Returns:
         decoded (np.ndarray): PCM audio
-        actual_kbps (float): actual bitrate after quantize+compress
+        actual_kbps (float): actual bitrate
         avg_latency_ms (float): mean per-chunk encode+decode latency
     """
     chunk_size = int(chunk_sec * sr)
@@ -181,38 +181,35 @@ def neural_encode_decode(model: NeuralAudioCodec, audio: np.ndarray,
 
             t0 = time.perf_counter()
 
-            # Encode to bottleneck latent
             z = model.encode(x)                         # (1, T_lat, dim)
             z_np = z.squeeze(0).cpu().numpy()           # (T_lat, dim)
 
-            # 1-bit uniform quantization (global min/max per chunk)
-            z_min = float(z_np.min())
-            z_max = float(z_np.max())
-            threshold = (z_min + z_max) / 2.0
-            z_bin = (z_np > threshold).astype(np.uint8)
+            if quantize:
+                # 1-bit uniform quantization (global min/max per chunk)
+                z_min = float(z_np.min())
+                z_max = float(z_np.max())
+                threshold = (z_min + z_max) / 2.0
+                z_bin = (z_np > threshold).astype(np.uint8)
+                compressed = zlib.compress(z_bin.tobytes(), level=9)
+                total_compressed_bits += len(compressed) * 8
+                z_bin_dec = np.frombuffer(
+                    zlib.decompress(compressed), dtype=np.uint8
+                ).reshape(z_np.shape)
+                z_final = np.where(z_bin_dec.astype(bool), z_max, z_min).astype(np.float32)
+            else:
+                # Float32 — compress for bitrate measurement only, decode from clean latents
+                compressed = zlib.compress(z_np.astype(np.float32).tobytes(), level=9)
+                total_compressed_bits += len(compressed) * 8
+                z_final = z_np
 
-            # Compress
-            compressed = zlib.compress(z_bin.tobytes(), level=9)
-            total_compressed_bits += len(compressed) * 8
-
-            # Decompress and dequantize (simulate decoder side)
-            z_bin_dec = np.frombuffer(
-                zlib.decompress(compressed), dtype=np.uint8
-            ).reshape(z_np.shape)
-            z_dequant = np.where(z_bin_dec.astype(bool), z_max, z_min).astype(np.float32)
-
-            # Decode
-            z_tensor = torch.from_numpy(z_dequant).unsqueeze(0).to(device)
-            x_recon = model.decode(z_tensor)            # (1, 1, T_audio)
+            z_tensor = torch.from_numpy(z_final).unsqueeze(0).to(device)
+            x_recon = model.decode(z_tensor)
 
             t1 = time.perf_counter()
             latencies_ms.append((t1 - t0) * 1000.0)
-
             recon_chunks.append(x_recon.squeeze().cpu().numpy())
 
     decoded = np.concatenate(recon_chunks) if recon_chunks else np.zeros_like(audio)
-
-    # Trim/pad to input length
     if len(decoded) >= len(audio):
         decoded = decoded[:len(audio)]
     else:
@@ -265,9 +262,13 @@ def main():
     CLIP_SEC = 5
     AAC_TARGET_KBPS = 10   # AAC will floor to ~16 kbps; actual is reported
 
+    # quantize=False: clean float32 audio for listening examples
+    # quantize=True:  1-bit deployment pipeline (requires QAT to sound good)
+    QUANTIZE = False
+
     # Output directory
     out_dir = PROJECT_ROOT / 'comparisons'
-    audio_dir = out_dir / 'audio_examples'
+    audio_dir = out_dir / ('audio_examples_clean' if not QUANTIZE else 'audio_examples_quantized')
     audio_dir.mkdir(parents=True, exist_ok=True)
 
     # Select one file per speaker (5 diverse speakers from test-clean)
@@ -326,12 +327,14 @@ def main():
         print(f"  AAC  → {aac_kbps:.1f} kbps  PESQ={aac_pesq:.3f}  STOI={aac_stoi:.3f}")
 
         # --- Neural pipeline ---
-        print("  Neural encode/decode (with 1-bit quant)...")
+        label = "float32 (clean)" if not QUANTIZE else "1-bit quant"
+        print(f"  Neural encode/decode ({label})...")
         neural_decoded, neural_kbps, neural_lat = neural_encode_decode(
-            model, audio, SR, device
+            model, audio, SR, device, quantize=QUANTIZE
         )
         neural_pesq, neural_stoi = compute_metrics(audio, neural_decoded, SR)
-        neural_path = sample_dir / f'neural_{neural_kbps:.0f}kbps.wav'
+        suffix = 'clean' if not QUANTIZE else '1bit'
+        neural_path = sample_dir / f'neural_{neural_kbps:.0f}kbps_{suffix}.wav'
         sf.write(neural_path, neural_decoded, SR)
         print(f"  Neur → {neural_kbps:.1f} kbps  PESQ={neural_pesq:.3f}  "
               f"STOI={neural_stoi:.3f}  lat={neural_lat:.0f}ms")
