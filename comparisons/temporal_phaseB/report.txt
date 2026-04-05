@@ -1,0 +1,27 @@
+
+CODEC COMPARISON — Phase B (Temporal Stride + 3-bit QAT)
+Generated: 2026-04-05 17:18
+====================================================================
+
+Architecture:
+  Encoder: d_model=384, 6 transformer layers, window=200 frames (100ms)
+  Bottleneck: Linear(384→32) → Conv1d stride=20 → ~100 Hz latent rate
+  Quantizer: 3-bit uniform (8 levels) + zlib level-9
+  Bitrate cap: 32 × 3-bit × 100 Hz = 9.6 kbps
+
+====================================================================
+Codec                     Bitrate     PESQ     STOI    Latency
+--------------------------------------------------------------------
+AAC (actual)                15.6k    1.490    0.497        N/A
+Neural 3-bit QAT             6.3k    1.794    0.588       58ms
+====================================================================
+
+PER-FILE RESULTS
+--------------------------------------------------------------------
+Speaker      AAC kbps   AAC PESQ   AAC STOI  Neur kbps     PESQ     STOI
+--------------------------------------------------------------------
+  1089           16.7      1.490      0.497        5.9    1.854    0.606
+  1188           15.4      1.501      0.500        6.1    1.747    0.574
+  1221           15.2      1.497      0.499        6.5    1.762    0.579
+  1284           15.6      1.485      0.496        6.1    1.936    0.631
+  1320           15.4      1.477      0.493        7.0    1.669    0.551
