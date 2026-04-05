@@ -237,13 +237,18 @@ class AudioDecoder(nn.Module):
 class NeuralAudioCodec(nn.Module):
     """
     Complete Neural Audio Codec: Encoder + Decoder
-    Total parameters: ~12M (reduced from 51.8M for faster training)
 
-    Optional bottleneck_dim compresses encoder output (d_model → bottleneck_dim)
-    before quantization and expands back (bottleneck_dim → d_model) for the decoder.
-    This is the primary bitrate control mechanism: with bottleneck_dim=32 and 1-bit
-    quantization at ~2000 Hz frame rate, raw bitrate = 32 × 1 × 2000 = 64 kbps,
-    which zlib compresses to ~8–10 kbps for correlated speech latents.
+    Bitrate control is via two complementary mechanisms:
+
+    1. bottleneck_dim  — reduces spatial dimension (384 → 32)
+    2. temporal_stride — reduces frame rate (2000 Hz → 100 Hz with stride=20)
+
+    With bottleneck_dim=32, temporal_stride=20, and 3-bit quantization:
+        32 × 3 × 100 Hz = 9,600 bps = 9.6 kbps  (hard architectural cap)
+
+    Temporal compression uses a learnable strided Conv1d (encode) and
+    ConvTranspose1d (decode) so the model can learn the best way to
+    summarise/reconstruct across the stride window.
     """
     def __init__(
         self,
@@ -255,10 +260,12 @@ class NeuralAudioCodec(nn.Module):
         window_size=256,
         dropout=0.1,
         bottleneck_dim=None,
+        temporal_stride=1,
     ):
         super().__init__()
 
         self.bottleneck_dim = bottleneck_dim
+        self.temporal_stride = temporal_stride
 
         self.encoder = AudioEncoder(
             sample_rate=sample_rate,
@@ -280,7 +287,7 @@ class NeuralAudioCodec(nn.Module):
             dropout=dropout
         )
 
-        # Bottleneck projection layers (None when bottleneck_dim is not set)
+        # Spatial bottleneck (d_model ↔ bottleneck_dim)
         if bottleneck_dim is not None:
             self.encoder_proj = nn.Linear(d_model, bottleneck_dim)
             self.decoder_proj = nn.Linear(bottleneck_dim, d_model)
@@ -288,31 +295,56 @@ class NeuralAudioCodec(nn.Module):
             self.encoder_proj = None
             self.decoder_proj = None
 
+        # Temporal bottleneck (learnable stride compression/expansion)
+        dim = bottleneck_dim if bottleneck_dim is not None else d_model
+        if temporal_stride > 1:
+            self.temporal_enc = nn.Conv1d(
+                dim, dim,
+                kernel_size=temporal_stride,
+                stride=temporal_stride,
+                padding=0,
+            )
+            self.temporal_dec = nn.ConvTranspose1d(
+                dim, dim,
+                kernel_size=temporal_stride,
+                stride=temporal_stride,
+                padding=0,
+            )
+        else:
+            self.temporal_enc = None
+            self.temporal_dec = None
+
     def encode(self, x):
         """
-        Encode waveform to latent representation.
+        Encode waveform → compressed latent.
 
-        Args:
-            x: (batch, 1, time) raw audio waveform
+        Pipeline: waveform → AudioEncoder → (spatial proj) → (temporal downsample)
+
         Returns:
-            z: (batch, T, d_model) if no bottleneck, or (batch, T, bottleneck_dim)
+            z: (batch, T_compressed, dim)
+               T_compressed = T / temporal_stride
         """
-        z = self.encoder(x)
+        z = self.encoder(x)                          # (B, T, d_model)
         if self.encoder_proj is not None:
-            z = self.encoder_proj(z)
+            z = self.encoder_proj(z)                 # (B, T, bottleneck_dim)
+        if self.temporal_enc is not None:
+            z = z.transpose(1, 2)                    # (B, dim, T)
+            z = self.temporal_enc(z)                 # (B, dim, T/stride)
+            z = z.transpose(1, 2)                    # (B, T/stride, dim)
         return z
 
     def decode(self, z):
         """
-        Decode latent representation to waveform.
+        Decode compressed latent → waveform.
 
-        Args:
-            z: (batch, T, bottleneck_dim) or (batch, T, d_model)
-        Returns:
-            (batch, 1, time) reconstructed audio
+        Pipeline: (temporal upsample) → (spatial proj) → AudioDecoder → waveform
         """
+        if self.temporal_dec is not None:
+            z = z.transpose(1, 2)                    # (B, dim, T/stride)
+            z = self.temporal_dec(z)                 # (B, dim, T)
+            z = z.transpose(1, 2)                    # (B, T, dim)
         if self.decoder_proj is not None:
-            z = self.decoder_proj(z)
+            z = self.decoder_proj(z)                 # (B, T, d_model)
         return self.decoder(z)
 
     def forward(self, x):
