@@ -73,7 +73,8 @@ def aac_encode_decode(audio, sr, target_kbps=10):
     container = av.open(tmp_path, 'r')
     frames = []
     for frame in container.decode(audio=0):
-        frames.append(frame.to_ndarray().flatten())
+        arr = frame.to_ndarray()
+        frames.append(arr[0])  # take channel 0 — AAC decoder may return stereo even for mono input
     container.close()
     Path(tmp_path).unlink(missing_ok=True)
 
@@ -202,7 +203,7 @@ def main():
     CLIP_SEC = 5
     AAC_TARGET_KBPS = 10
 
-    neural_ckpt = PROJECT_ROOT / 'checkpoints_ratedistortion/temporal_phaseB/best.pt'
+    neural_ckpt = PROJECT_ROOT / 'checkpoints_active/temporal_phaseB/best.pt'
     out_dir = PROJECT_ROOT / 'comparisons' / 'temporal_phaseB'
     out_dir.mkdir(parents=True, exist_ok=True)
 
