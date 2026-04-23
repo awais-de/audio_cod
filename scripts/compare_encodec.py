@@ -255,7 +255,7 @@ def main():
     print("THREE-WAY COMPARISON: AAC vs EnCodec vs Our Neural Codec (Phase B)")
     print(f"{'='*72}\n")
 
-    our_ckpt = PROJECT_ROOT / 'checkpoints_active/temporal_phaseB/best.pt'
+    our_ckpt = PROJECT_ROOT / 'checkpoints_active/temporal_phaseC/best.pt'
     print("Loading our Phase B model...")
     our_model, our_ckpt_meta = load_our_model(our_ckpt, device)
     print(f"  bottleneck_dim={our_ckpt_meta.get('bottleneck_dim')}, "
@@ -298,8 +298,9 @@ def main():
             result.update({f'{key}_kbps': enc_kbps, f'{key}_pesq': enc_pesq, f'{key}_stoi': enc_stoi})
             print(f"  EnCodec {bw:4.1f}  → {enc_kbps:.1f} kbps  PESQ={enc_pesq:.3f}  STOI={enc_stoi:.3f}")
 
-        # Our codec
-        our_dec, our_kbps, our_lat = our_encode_decode(our_model, audio, SR, device)
+        # Our codec — full-clip encode to avoid chunk boundary artifacts
+        our_dec, our_kbps, our_lat = our_encode_decode(our_model, audio, SR, device,
+                                                        chunk_sec=CLIP_SEC)
         our_pesq, our_stoi = compute_metrics(audio, our_dec, SR)
         sf.write(sample_dir / f'ours_3bit_{our_kbps:.0f}kbps.wav', our_dec, SR)
         result.update({'our_kbps': our_kbps, 'our_pesq': our_pesq,
