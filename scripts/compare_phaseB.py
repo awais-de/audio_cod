@@ -203,8 +203,10 @@ def main():
     CLIP_SEC = 5
     AAC_TARGET_KBPS = 10
 
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%Y-%m-%d')
     neural_ckpt = PROJECT_ROOT / 'checkpoints_active/temporal_phaseB/best.pt'
-    out_dir = PROJECT_ROOT / 'comparisons' / 'temporal_phaseB'
+    out_dir = PROJECT_ROOT / 'comparisons' / f'{timestamp}_phaseB_aac_vs_3bit_qat'
     out_dir.mkdir(parents=True, exist_ok=True)
 
     paths = get_dataset_paths()

@@ -238,7 +238,9 @@ def main():
     CLIP_SEC = 5
     ENCODEC_BANDWIDTHS = [1.5, 3.0, 6.0]
 
-    out_dir = PROJECT_ROOT / 'comparisons' / 'encodec_comparison'
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%Y-%m-%d')
+    out_dir = PROJECT_ROOT / 'comparisons' / f'{timestamp}_phaseC_aac_vs_encodec_vs_ours'
     out_dir.mkdir(parents=True, exist_ok=True)
 
     paths = get_dataset_paths()
