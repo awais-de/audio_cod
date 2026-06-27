@@ -90,5 +90,12 @@ handover.md
 comparisons/temporal_phaseB/progress_report.md
 
 # Private docs (reference material, not for public repo)
+docs/
 docs/TRAINING_PROCESS.md
 docs/presentation.html
+
+# Archive (local reference only, not for public repo)
+/archive/
+
+# Comparisons (audio files + reports, local only)
+comparisons/
