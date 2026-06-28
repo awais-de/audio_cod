@@ -23,15 +23,12 @@ Output: checkpoints_active/temporal_phaseD_vae/
 
 import sys
 import json
-import zlib
 from pathlib import Path
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import soundfile as sf
-from torch.utils.data import DataLoader, IterableDataset
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +36,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.model import NeuralAudioCodec
 from src.paths import get_dataset_paths
+from src.losses import multi_scale_stft_loss, NoisyAudioDataset, measure_real_bitrate
 
 
 # Variational bottleneck  (separate module — model.py untouched)
@@ -73,138 +71,6 @@ class VariationalBottleneck(nn.Module):
         # KL(N(μ,σ²) || N(0,1)) — mean over all elements
         kl = -0.5 * torch.mean(1.0 + log_sigma - mu.pow(2) - log_sigma.exp())
         return z_sampled, kl
-
-
-# Noise augmentation (unchanged from Phase C/D)
-
-def pink_noise(n):
-    f = np.fft.rfftfreq(n)
-    f[0] = 1.0
-    spectrum = (np.random.randn(len(f)) + 1j * np.random.randn(len(f))) / np.sqrt(f)
-    spectrum[0] = 0
-    noise = np.fft.irfft(spectrum, n=n).astype(np.float32)
-    return noise / (np.abs(noise).max() + 1e-8)
-
-
-def add_noise(clean, noise_type, snr_db):
-    signal_power = np.mean(clean ** 2) + 1e-8
-    if noise_type == 'white':
-        noise = np.random.randn(len(clean)).astype(np.float32)
-    elif noise_type == 'pink':
-        noise = pink_noise(len(clean))
-    else:
-        noise = np.random.randn(len(clean)).astype(np.float32)
-    noise_power = np.mean(noise ** 2) + 1e-8
-    target_noise_power = signal_power / (10 ** (snr_db / 10))
-    noise = noise * np.sqrt(target_noise_power / noise_power)
-    return np.clip(clean + noise, -1.0, 1.0).astype(np.float32)
-
-
-class NoisyAudioDataset(IterableDataset):
-    def __init__(self, data_root, chunk_seconds=1.0, sample_rate=16000,
-                 epoch_size=1000, noise_prob=0.6, snr_range=(5, 20)):
-        self.chunk_size = int(chunk_seconds * sample_rate)
-        self.sample_rate = sample_rate
-        self.epoch_size = epoch_size
-        self.noise_prob = noise_prob
-        self.snr_min, self.snr_max = snr_range
-        exts = ('.wav', '.flac', '.mp3', '.ogg')
-        self.files = sorted(p for p in Path(data_root).rglob('*') if p.suffix.lower() in exts)
-        if not self.files:
-            raise ValueError(f"No audio files in {data_root}")
-        print(f"Dataset: {len(self.files)} files  |  noise_prob={noise_prob}  "
-              f"SNR={snr_range[0]}-{snr_range[1]}dB")
-
-    def _load_chunk(self, path):
-        audio, sr = sf.read(path)
-        if audio.ndim > 1:
-            audio = audio.mean(axis=1)
-        if sr != self.sample_rate:
-            n = int(len(audio) * self.sample_rate / sr)
-            audio = np.interp(np.linspace(0, len(audio), n), np.arange(len(audio)), audio)
-        audio = np.clip(audio, -1.0, 1.0).astype(np.float32)
-        if len(audio) > self.chunk_size:
-            start = np.random.randint(0, len(audio) - self.chunk_size)
-            return audio[start:start + self.chunk_size]
-        return np.pad(audio, (0, self.chunk_size - len(audio)))
-
-    def __len__(self):
-        return self.epoch_size
-
-    def __iter__(self):
-        noise_types = ['white', 'pink']
-        for _ in range(self.epoch_size):
-            path = self.files[np.random.randint(0, len(self.files))]
-            try:
-                chunk = self._load_chunk(path)
-                if np.random.random() < self.noise_prob:
-                    snr = np.random.uniform(self.snr_min, self.snr_max)
-                    noise_type = np.random.choice(noise_types + ['babble'])
-                    if noise_type == 'babble':
-                        babble_path = self.files[np.random.randint(0, len(self.files))]
-                        try:
-                            babble = self._load_chunk(babble_path)
-                            chunk = add_noise(chunk, 'white', snr)
-                            babble_power = np.mean(babble ** 2) + 1e-8
-                            sig_power = np.mean(chunk ** 2) + 1e-8
-                            target_babble_power = sig_power / (10 ** (snr / 10))
-                            babble_scaled = babble * np.sqrt(target_babble_power / babble_power)
-                            chunk = np.clip(chunk + babble_scaled, -1.0, 1.0).astype(np.float32)
-                        except Exception:
-                            chunk = add_noise(chunk, 'white', snr)
-                    else:
-                        chunk = add_noise(chunk, noise_type, snr)
-                yield torch.FloatTensor(chunk).unsqueeze(0)
-            except Exception:
-                continue
-
-
-# Loss
-
-def multi_scale_stft_loss(x_recon, x_target, fft_sizes=(256, 512, 1024), hop=160):
-    if x_recon.ndim == 3:
-        x_recon = x_recon.squeeze(1)
-    if x_target.ndim == 3:
-        x_target = x_target.squeeze(1)
-    n = min(x_recon.shape[-1], x_target.shape[-1])
-    x_recon, x_target = x_recon[..., :n], x_target[..., :n]
-    total = torch.tensor(0.0, device=x_recon.device)
-    for n_fft in fft_sizes:
-        win = torch.hann_window(n_fft, device=x_recon.device)
-        Sr = torch.stft(x_recon, n_fft=n_fft, hop_length=hop, window=win, return_complex=True)
-        St = torch.stft(x_target, n_fft=n_fft, hop_length=hop, window=win, return_complex=True)
-        Mr, Mt = torch.abs(Sr), torch.abs(St)
-        total = total + torch.mean((Mr - Mt) ** 2) + torch.mean(torch.abs(Mr - Mt))
-    return total / len(fft_sizes)
-
-
-# Bitrate measurement (uses model.encode() directly — no VAE sampling)
-
-def measure_real_bitrate(model, audio_files, device, n_files=5, chunk_samples=16000):
-    model.eval()
-    total_bits, total_dur = 0, 0.0
-    num_levels = 8
-    with torch.no_grad():
-        for path in audio_files[:n_files]:
-            try:
-                audio, sr = sf.read(path)
-                if audio.ndim > 1:
-                    audio = audio.mean(axis=1)
-                audio = np.clip(audio, -1.0, 1.0).astype(np.float32)
-                for start in range(0, len(audio), chunk_samples):
-                    chunk = audio[start:start + chunk_samples]
-                    if len(chunk) < 160:
-                        continue
-                    x = torch.FloatTensor(chunk).unsqueeze(0).unsqueeze(0).to(device)
-                    z = model.encode(x).squeeze(0).cpu().numpy()  # μ only
-                    z_min, z_max = z.min(), z.max()
-                    scale = (z_max - z_min) / 7 + 1e-8
-                    q = np.clip(np.round((z - z_min) / scale), 0, 7).astype(np.uint8)
-                    total_bits += len(zlib.compress(q.tobytes(), level=9)) * 8
-                    total_dur += len(chunk) / sr
-            except Exception:
-                continue
-    return total_bits / total_dur / 1000.0 if total_dur > 0 else float('nan')
 
 
 # Training

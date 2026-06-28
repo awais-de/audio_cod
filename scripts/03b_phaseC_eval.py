@@ -15,7 +15,6 @@ AAC:       ~15.6 kbps (minimum floor at 16kHz mono)
 import sys
 import zlib
 import time
-import textwrap
 import tempfile
 from pathlib import Path
 from datetime import datetime
@@ -29,8 +28,8 @@ import torchaudio
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.model import NeuralAudioCodec
 from src.paths import get_dataset_paths
+from src.codec_utils import load_model, compute_metrics
 
 try:
     from encodec import EncodecModel
@@ -39,18 +38,6 @@ try:
 except ImportError:
     ENCODEC_AVAILABLE = False
     print("Warning: encodec not installed — pip install encodec")
-
-try:
-    from pesq import pesq as pesq_fn
-    PESQ_AVAILABLE = True
-except ImportError:
-    PESQ_AVAILABLE = False
-
-try:
-    from pystoi import stoi as stoi_fn
-    STOI_AVAILABLE = True
-except ImportError:
-    STOI_AVAILABLE = False
 
 
 # AAC
@@ -136,30 +123,8 @@ def encodec_encode_decode(audio_np, sr, bandwidth_kbps, device):
 
 
 # NACodec — 3-bit QAT (Phase C)
-
-def load_nacodec_model(checkpoint_path, device):
-    ckpt = torch.load(checkpoint_path, map_location='cpu')
-    state = ckpt.get('model_state_dict', ckpt)
-    d_model = ckpt.get('d_model', 384)
-    ids = set()
-    for k in state:
-        if 'encoder.transformer_blocks.' in k:
-            p = k.split('.')
-            if len(p) > 2 and p[2].isdigit():
-                ids.add(int(p[2]))
-    n_layers = max(ids) + 1 if ids else 6
-    model = NeuralAudioCodec(
-        d_model=d_model, n_layers=n_layers,
-        n_heads=ckpt.get('n_heads', 8),
-        window_size=ckpt.get('window_size', 200),
-        dropout=0.0,
-        bottleneck_dim=ckpt.get('bottleneck_dim', 32),
-        temporal_stride=ckpt.get('temporal_stride', 20),
-    ).to(device)
-    model.load_state_dict(state)
-    model.eval()
-    return model, ckpt
-
+# NOTE: NOT replaced by codec_utils.encode_decode — this version tracks per-frame
+# latency and returns 3 values (decoded, kbps, mean_latency_ms).
 
 def nacodec_encode_decode(model, audio_np, sr, device, chunk_sec=1.0):
     num_levels = 8
@@ -192,27 +157,6 @@ def nacodec_encode_decode(model, audio_np, sr, device, chunk_sec=1.0):
         decoded = np.pad(decoded, (0, len(audio_np) - len(decoded)))
     kbps = total_bits / (len(audio_np) / sr) / 1000
     return decoded.astype(np.float32), kbps, float(np.mean(latencies))
-
-
-# Metrics
-
-def compute_metrics(ref, deg, sr):
-    n = min(len(ref), len(deg))
-    ref, deg = ref[:n].copy(), deg[:n].copy()
-    ref /= (np.abs(ref).max() + 1e-8)
-    deg /= (np.abs(deg).max() + 1e-8)
-    pesq_score, stoi_score = None, None
-    if PESQ_AVAILABLE:
-        try:
-            pesq_score = float(pesq_fn(sr, ref, deg, 'wb'))
-        except Exception:
-            pass
-    if STOI_AVAILABLE:
-        try:
-            stoi_score = float(stoi_fn(ref, deg, sr, extended=False))
-        except Exception:
-            pass
-    return pesq_score, stoi_score
 
 
 # Main
@@ -249,7 +193,7 @@ def main():
 
     nacodec_ckpt = PROJECT_ROOT / 'checkpoints_active/temporal_phaseC/best.pt'
     print("Loading NACodec (Phase C)....")
-    nacodec_model, nacodec_meta = load_nacodec_model(nacodec_ckpt, device)
+    nacodec_model, nacodec_meta = load_model(nacodec_ckpt, device)
     print(f"  bottleneck_dim={nacodec_meta.get('bottleneck_dim')}, "
           f"temporal_stride={nacodec_meta.get('temporal_stride')}, "
           f"best_loss={nacodec_meta.get('train_loss', 0):.4f}\n")

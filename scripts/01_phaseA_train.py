@@ -22,11 +22,9 @@ import sys
 import json
 from pathlib import Path
 
-import numpy as np
 import torch
 import torch.optim as optim
-import soundfile as sf
-from torch.utils.data import DataLoader, IterableDataset
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -34,62 +32,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.model import NeuralAudioCodec
 from src.paths import get_dataset_paths, get_checkpoint_paths
-
-
-# Loss
-
-def multi_scale_stft_loss(x_recon, x_target, fft_sizes=(256, 512, 1024), hop=160):
-    if x_recon.ndim == 3:
-        x_recon = x_recon.squeeze(1)
-    if x_target.ndim == 3:
-        x_target = x_target.squeeze(1)
-    n = min(x_recon.shape[-1], x_target.shape[-1])
-    x_recon, x_target = x_recon[..., :n], x_target[..., :n]
-
-    total = torch.tensor(0.0, device=x_recon.device)
-    for n_fft in fft_sizes:
-        win = torch.hann_window(n_fft, device=x_recon.device)
-        Sr = torch.stft(x_recon, n_fft=n_fft, hop_length=hop, window=win, return_complex=True)
-        St = torch.stft(x_target, n_fft=n_fft, hop_length=hop, window=win, return_complex=True)
-        Mr, Mt = torch.abs(Sr), torch.abs(St)
-        total = total + torch.mean((Mr - Mt) ** 2) + torch.mean(torch.abs(Mr - Mt))
-    return total / len(fft_sizes)
-
-
-# Dataset
-
-class AudioChunkDataset(IterableDataset):
-    def __init__(self, data_root, chunk_seconds=1.0, sample_rate=16000, epoch_size=1000):
-        self.chunk_size = int(chunk_seconds * sample_rate)
-        self.sample_rate = sample_rate
-        self.epoch_size = epoch_size
-        exts = ('.wav', '.flac', '.mp3', '.ogg')
-        self.files = sorted(p for p in Path(data_root).rglob('*') if p.suffix.lower() in exts)
-        if not self.files:
-            raise ValueError(f"No audio files in {data_root}")
-        print(f"Dataset: {len(self.files)} files")
-
-    def __len__(self):
-        return self.epoch_size
-
-    def __iter__(self):
-        for _ in range(self.epoch_size):
-            path = self.files[np.random.randint(0, len(self.files))]
-            try:
-                audio, sr = sf.read(path)
-                if audio.ndim > 1:
-                    audio = audio.mean(axis=1)
-                if sr != self.sample_rate:
-                    n = int(len(audio) * self.sample_rate / sr)
-                    audio = np.interp(np.linspace(0, len(audio), n), np.arange(len(audio)), audio)
-                if len(audio) > self.chunk_size:
-                    start = np.random.randint(0, len(audio) - self.chunk_size)
-                    chunk = audio[start:start + self.chunk_size]
-                else:
-                    chunk = np.pad(audio, (0, self.chunk_size - len(audio)))
-                yield torch.FloatTensor(np.clip(chunk, -1.0, 1.0).astype(np.float32)).unsqueeze(0)
-            except Exception:
-                continue
+from src.losses import multi_scale_stft_loss, AudioChunkDataset
 
 
 # Training
@@ -141,7 +84,6 @@ def train(args):
           f"n_layers={n_layers}, n_heads={n_heads}")
     print(f"New layers (random init): {missing}\n")
 
-    # Dataset
     dataset = AudioChunkDataset(args.data_root, chunk_seconds=args.chunk_sec,
                                 epoch_size=args.samples_per_epoch)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, num_workers=0)

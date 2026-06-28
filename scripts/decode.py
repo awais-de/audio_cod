@@ -20,45 +20,12 @@ import torch
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.model import NeuralAudioCodec
+from src.codec_utils import find_checkpoint, load_model
 
 MAGIC      = b'NACODEC1'
 HEADER     = struct.Struct('!8sIIII')   # magic, sr, n_samples, chunk_samples, n_chunks
 CHUNK_HDR  = struct.Struct('!ffB')      # z_min, z_max, n_dims
 NUM_LEVELS = 8
-
-
-def find_checkpoint():
-    for p in [
-        PROJECT_ROOT / 'checkpoints_active/temporal_phaseG/best.pt',
-        PROJECT_ROOT / 'checkpoints_active/temporal_phaseF/best.pt',
-        PROJECT_ROOT / 'checkpoints_active/temporal_phaseC/best.pt',
-    ]:
-        if p.exists():
-            return p
-    raise FileNotFoundError(
-        "No trained checkpoint found. Pass --checkpoint explicitly."
-    )
-
-
-def load_model(ckpt_path, device):
-    ckpt  = torch.load(ckpt_path, map_location='cpu')
-    state = ckpt.get('model_state_dict', ckpt)
-    d     = ckpt.get('d_model', 384)
-    ids   = {int(k.split('.')[2]) for k in state
-             if 'encoder.transformer_blocks.' in k and k.split('.')[2].isdigit()}
-    model = NeuralAudioCodec(
-        d_model         = d,
-        n_layers        = max(ids) + 1 if ids else 6,
-        n_heads         = ckpt.get('n_heads', 8),
-        window_size     = ckpt.get('window_size', 200),
-        dropout         = 0.0,
-        bottleneck_dim  = ckpt.get('bottleneck_dim', 32),
-        temporal_stride = ckpt.get('temporal_stride', 20),
-    ).to(device)
-    model.load_state_dict(state)
-    model.eval()
-    return model, ckpt
 
 
 def main():
@@ -72,7 +39,7 @@ def main():
     parser.add_argument('--device',     default='cuda' if torch.cuda.is_available() else 'cpu')
     args = parser.parse_args()
 
-    ckpt_path = args.checkpoint or find_checkpoint()
+    ckpt_path = args.checkpoint or find_checkpoint(PROJECT_ROOT)
     device    = torch.device(args.device)
 
     print(f"\n{'='*56}")
