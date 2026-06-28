@@ -69,6 +69,8 @@ python scripts/03b_phaseC_eval.py
 
 ## Architecture
 
+![Neural Audio Codec — Architecture](architecture.png)
+
 ```
 Waveform (16 kHz)
   → CausalConv encoder   [3× stride-2  →  2000 Hz latent rate]
