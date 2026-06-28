@@ -12,10 +12,13 @@ Developed at TU Ilmenau under the supervision of Prof. Gerald Schuller.
 git clone https://gitlab.tu-ilmenau.de/muaw1874/audio_cod.git
 cd audio_cod
 
-# Optional but recommended
-python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
 
-# Single command: installs dependencies, downloads checkpoints (~480 MB), verifies setup
+pip install -r requirements.txt
+
+# Downloads checkpoints (~480 MB) and LibriSpeech test-clean (~346 MB) if not present,
+# then verifies the full setup end-to-end
 python bootstrap.py
 ```
 
@@ -124,21 +127,24 @@ Each eval script writes audio samples, a metrics CSV, and a summary report to `c
 
 ## Dataset
 
-Inference uses LibriSpeech `test-clean` by default, expected at:
+Inference uses LibriSpeech `test-clean` by default. `bootstrap.py` downloads and extracts it automatically (~346 MB) if not already present. It is placed at:
 
 ```
 ../datasets/LibriSpeech/test-clean/
 ```
 
-i.e. one directory above the project root, as a sibling. To download:
+i.e. one directory above the project root, as a sibling of `audio_cod/`.
+
+If you prefer to download it manually (or if the automatic download fails):
 
 ```bash
-mkdir -p ../datasets/LibriSpeech && cd ../datasets/LibriSpeech
+mkdir -p ../datasets/LibriSpeech
+cd ../datasets/LibriSpeech
 wget https://www.openslr.org/resources/12/test-clean.tar.gz
 tar -xzf test-clean.tar.gz
 ```
 
-If you do not have the dataset, pass any audio file directly:
+To run inference on your own audio instead:
 
 ```bash
 python scripts/infer_offline.py --input /path/to/speech.wav
