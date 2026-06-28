@@ -32,9 +32,7 @@ from src.model import NeuralAudioCodec
 from src.paths import get_dataset_paths
 
 
-# ---------------------------------------------------------------------------
 # 3-bit STE quantization
-# ---------------------------------------------------------------------------
 
 def ste_quantize_3bit(z: torch.Tensor) -> torch.Tensor:
     num_levels = 8  # 2^3
@@ -47,9 +45,7 @@ def ste_quantize_3bit(z: torch.Tensor) -> torch.Tensor:
     return z + (z_quant - z).detach()
 
 
-# ---------------------------------------------------------------------------
 # Loss
-# ---------------------------------------------------------------------------
 
 def multi_scale_stft_loss(x_recon, x_target, fft_sizes=(256, 512, 1024), hop=160):
     if x_recon.ndim == 3:
@@ -69,9 +65,7 @@ def multi_scale_stft_loss(x_recon, x_target, fft_sizes=(256, 512, 1024), hop=160
     return total / len(fft_sizes)
 
 
-# ---------------------------------------------------------------------------
 # Dataset
-# ---------------------------------------------------------------------------
 
 class AudioChunkDataset(IterableDataset):
     def __init__(self, data_root, chunk_seconds=1.0, sample_rate=16000, epoch_size=1000):
@@ -107,9 +101,7 @@ class AudioChunkDataset(IterableDataset):
                 continue
 
 
-# ---------------------------------------------------------------------------
 # Bitrate measurement
-# ---------------------------------------------------------------------------
 
 def measure_real_bitrate(model, audio_files, device, n_files=5, chunk_samples=16000):
     model.eval()
@@ -146,9 +138,7 @@ def measure_real_bitrate(model, audio_files, device, n_files=5, chunk_samples=16
     return total_bits / total_dur / 1000.0 if total_dur > 0 else float('nan')
 
 
-# ---------------------------------------------------------------------------
 # Training
-# ---------------------------------------------------------------------------
 
 def train(args):
     print(f"\n{'='*68}")
@@ -282,9 +272,7 @@ def train(args):
     print(f"\nPhase B done. Best loss: {best_loss:.6f}")
 
 
-# ---------------------------------------------------------------------------
 # CLI
-# ---------------------------------------------------------------------------
 
 def main():
     import argparse

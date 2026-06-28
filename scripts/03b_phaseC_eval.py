@@ -53,9 +53,7 @@ except ImportError:
     STOI_AVAILABLE = False
 
 
-# ---------------------------------------------------------------------------
 # AAC
-# ---------------------------------------------------------------------------
 
 def aac_encode_decode(audio, sr, target_kbps=10):
     duration = len(audio) / sr
@@ -94,9 +92,7 @@ def aac_encode_decode(audio, sr, target_kbps=10):
     return decoded, actual_kbps
 
 
-# ---------------------------------------------------------------------------
 # EnCodec
-# ---------------------------------------------------------------------------
 
 def encodec_encode_decode(audio_np, sr, bandwidth_kbps, device):
     """
@@ -139,9 +135,7 @@ def encodec_encode_decode(audio_np, sr, bandwidth_kbps, device):
     return decoded_16k.astype(np.float32), actual_kbps
 
 
-# ---------------------------------------------------------------------------
 # Our Neural Codec (Phase B, 3-bit QAT)
-# ---------------------------------------------------------------------------
 
 def load_our_model(checkpoint_path, device):
     ckpt = torch.load(checkpoint_path, map_location='cpu')
@@ -200,9 +194,7 @@ def our_encode_decode(model, audio_np, sr, device, chunk_sec=1.0):
     return decoded.astype(np.float32), kbps, float(np.mean(latencies))
 
 
-# ---------------------------------------------------------------------------
 # Metrics
-# ---------------------------------------------------------------------------
 
 def compute_metrics(ref, deg, sr):
     n = min(len(ref), len(deg))
@@ -223,9 +215,7 @@ def compute_metrics(ref, deg, sr):
     return pesq_score, stoi_score
 
 
-# ---------------------------------------------------------------------------
 # Main
-# ---------------------------------------------------------------------------
 
 def mean(vals):
     v = [x for x in vals if x is not None]

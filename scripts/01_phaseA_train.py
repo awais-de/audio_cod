@@ -36,9 +36,7 @@ from src.model import NeuralAudioCodec
 from src.paths import get_dataset_paths, get_checkpoint_paths
 
 
-# ---------------------------------------------------------------------------
 # Loss
-# ---------------------------------------------------------------------------
 
 def multi_scale_stft_loss(x_recon, x_target, fft_sizes=(256, 512, 1024), hop=160):
     if x_recon.ndim == 3:
@@ -58,9 +56,7 @@ def multi_scale_stft_loss(x_recon, x_target, fft_sizes=(256, 512, 1024), hop=160
     return total / len(fft_sizes)
 
 
-# ---------------------------------------------------------------------------
 # Dataset
-# ---------------------------------------------------------------------------
 
 class AudioChunkDataset(IterableDataset):
     def __init__(self, data_root, chunk_seconds=1.0, sample_rate=16000, epoch_size=1000):
@@ -96,9 +92,7 @@ class AudioChunkDataset(IterableDataset):
                 continue
 
 
-# ---------------------------------------------------------------------------
 # Training
-# ---------------------------------------------------------------------------
 
 def train(args):
     print(f"\n{'='*68}")
@@ -236,9 +230,7 @@ def train(args):
     print(f"Next: run Phase B (QAT) from {args.output}/best.pt")
 
 
-# ---------------------------------------------------------------------------
 # CLI
-# ---------------------------------------------------------------------------
 
 def main():
     import argparse

@@ -36,7 +36,6 @@ except ImportError:
     STOI_OK = False
 
 
-# ---------------------------------------------------------------------------
 
 def load_model(checkpoint_path, device):
     ckpt = torch.load(checkpoint_path, map_location='cpu')
@@ -105,7 +104,6 @@ def compute_metrics(ref, deg, sr):
     return pesq, stoi
 
 
-# ---------------------------------------------------------------------------
 
 def main():
     SR = 16000

@@ -43,9 +43,7 @@ from src.model import NeuralAudioCodec
 from src.paths import get_dataset_paths
 
 
-# ---------------------------------------------------------------------------
 # Loss — the only thing that changed
-# ---------------------------------------------------------------------------
 
 def multi_scale_stft_loss(x_recon, x_target, fft_sizes=(256, 512, 1024), hop=160):
     if x_recon.ndim == 3:
@@ -66,9 +64,7 @@ def multi_scale_stft_loss(x_recon, x_target, fft_sizes=(256, 512, 1024), hop=160
     return total / len(fft_sizes)
 
 
-# ---------------------------------------------------------------------------
 # 3-bit STE (unchanged from Phase C)
-# ---------------------------------------------------------------------------
 
 def ste_quantize_3bit(z):
     num_levels = 8
@@ -80,9 +76,7 @@ def ste_quantize_3bit(z):
     return z + (z_quant - z).detach()
 
 
-# ---------------------------------------------------------------------------
 # Noise augmentation (unchanged from Phase C)
-# ---------------------------------------------------------------------------
 
 def pink_noise(n):
     f = np.fft.rfftfreq(n)
@@ -166,9 +160,7 @@ class NoisyAudioDataset(IterableDataset):
                 continue
 
 
-# ---------------------------------------------------------------------------
 # Bitrate measurement
-# ---------------------------------------------------------------------------
 
 def measure_real_bitrate(model, audio_files, device, n_files=5, chunk_samples=16000):
     model.eval()
@@ -197,9 +189,7 @@ def measure_real_bitrate(model, audio_files, device, n_files=5, chunk_samples=16
     return total_bits / total_dur / 1000.0 if total_dur > 0 else float('nan')
 
 
-# ---------------------------------------------------------------------------
 # Training
-# ---------------------------------------------------------------------------
 
 def train(args):
     print(f"\n{'='*68}")
@@ -330,9 +320,7 @@ def train(args):
     print(f"\nPhase E done. Best loss: {best_loss:.6f}")
 
 
-# ---------------------------------------------------------------------------
 # CLI
-# ---------------------------------------------------------------------------
 
 def main():
     import argparse

@@ -35,9 +35,7 @@ from src.model import NeuralAudioCodec
 from src.paths import get_dataset_paths
 
 
-# ---------------------------------------------------------------------------
 # Combined spectral loss (identical to Phase F)
-# ---------------------------------------------------------------------------
 
 class CombinedSpectralLoss(nn.Module):
     def __init__(self, sample_rate=16000, fft_sizes=(256, 512, 1024), hop=160, n_mels=80):
@@ -83,9 +81,7 @@ class CombinedSpectralLoss(nn.Module):
         return (lin_loss + log_loss + mel_loss) / 3.0
 
 
-# ---------------------------------------------------------------------------
 # 3-bit STE (unchanged)
-# ---------------------------------------------------------------------------
 
 def ste_quantize_3bit(z):
     num_levels = 8
@@ -97,9 +93,7 @@ def ste_quantize_3bit(z):
     return z + (z_quant - z).detach()
 
 
-# ---------------------------------------------------------------------------
 # Noise augmentation (unchanged)
-# ---------------------------------------------------------------------------
 
 def pink_noise(n):
     f = np.fft.rfftfreq(n)
@@ -172,9 +166,7 @@ class NoisyAudioDataset(IterableDataset):
                 continue
 
 
-# ---------------------------------------------------------------------------
 # Bitrate measurement
-# ---------------------------------------------------------------------------
 
 def measure_real_bitrate(model, audio_files, device, n_files=5, chunk_samples=16000):
     model.eval()
@@ -202,9 +194,7 @@ def measure_real_bitrate(model, audio_files, device, n_files=5, chunk_samples=16
     return total_bits / total_dur / 1000.0 if total_dur > 0 else float('nan')
 
 
-# ---------------------------------------------------------------------------
 # Training
-# ---------------------------------------------------------------------------
 
 def train(args):
     print(f"\n{'='*68}")

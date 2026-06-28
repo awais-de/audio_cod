@@ -36,7 +36,6 @@ except ImportError:
     STOI_OK = False
 
 
-# ---------------------------------------------------------------------------
 
 def load_model(checkpoint_path, device):
     """Load codec from checkpoint — VAE weights ignored at inference."""
@@ -111,7 +110,6 @@ def avg(results, key):
     return float(np.mean(v)) if v else float('nan')
 
 
-# ---------------------------------------------------------------------------
 
 def main():
     SR = 16000

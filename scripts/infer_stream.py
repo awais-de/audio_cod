@@ -48,9 +48,7 @@ SR         = 16000
 CHUNK_HDR  = struct.Struct('!ffB')   # z_min, z_max, n_dims
 
 
-# ---------------------------------------------------------------------------
 # Model loading
-# ---------------------------------------------------------------------------
 
 def find_checkpoint():
     for p in [
@@ -83,9 +81,7 @@ def load_model(ckpt_path, device):
     return model, ckpt
 
 
-# ---------------------------------------------------------------------------
 # Per-frame encode / decode  (same logic as encode.py / decode.py)
-# ---------------------------------------------------------------------------
 
 def encode_frame(model, audio_chunk, device):
     """
@@ -133,9 +129,7 @@ def decode_frame(model, payload, device):
     return x_recon.squeeze().cpu().numpy().astype(np.float32)
 
 
-# ---------------------------------------------------------------------------
 # Streaming loop
-# ---------------------------------------------------------------------------
 
 def run(args):
     if not SD_OK:
@@ -237,9 +231,7 @@ def run(args):
         print(f"{'='*60}")
 
 
-# ---------------------------------------------------------------------------
 # CLI
-# ---------------------------------------------------------------------------
 
 def main():
     parser = argparse.ArgumentParser(
