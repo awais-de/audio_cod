@@ -110,6 +110,22 @@ def check_venv():
         info("recommended: python -m venv venv && source venv/bin/activate")
 
 
+def _parse_requirements(req_file):
+    """Return list of (pkg_spec, pkg_name) from requirements.txt, skipping comments."""
+    import re
+    entries = []
+    for line in req_file.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        pkg_spec = line.split("#")[0].strip()
+        if not pkg_spec:
+            continue
+        name = re.split(r"[>=<!;\s@]", pkg_spec)[0].lower()
+        entries.append((pkg_spec, name))
+    return entries
+
+
 def install_dependencies():
     step("Python dependencies")
 
@@ -118,13 +134,12 @@ def install_dependencies():
         fail("requirements.txt not found")
         return
 
-    # Upgrade pip silently first
     subprocess.run(
         [PYTHON, "-m", "pip", "install", "--upgrade", "pip", "-q"],
         check=False
     )
 
-    # Install all requirements; capture output to detect partial failures
+    # Fast path: install everything at once
     result = subprocess.run(
         [PYTHON, "-m", "pip", "install", "-r", str(req_file), "-q"],
         capture_output=True, text=True
@@ -132,46 +147,110 @@ def install_dependencies():
 
     if result.returncode == 0:
         ok("all packages from requirements.txt")
-    else:
-        stderr = result.stderr.lower()
-        # Known optional packages that require system libraries to build from source.
-        # Inference works without them — degrade gracefully.
-        known_optional = {
-            "pyaudio":   "PortAudio not found — streaming inference unavailable",
-            "portaudio": "PortAudio not found — streaming inference unavailable",
-            "pesq":      "Python dev headers missing (python3-dev) — PESQ metric unavailable",
-        }
-        hit = next((msg for key, msg in known_optional.items() if key in stderr), None)
-        if hit:
-            warn("optional package could not be built", hit)
-            ok("all other packages installed")
+        return
+
+    # Something failed — install one by one so we know exactly what succeeded
+    # and what didn't, rather than declaring everything ok based on a guess.
+    optional = {"pesq", "pyaudio", "portaudio"}
+    packages = _parse_requirements(req_file)
+
+    failed_required = []
+    failed_optional = []
+
+    for pkg_spec, name in packages:
+        r = subprocess.run(
+            [PYTHON, "-m", "pip", "install", pkg_spec, "-q"],
+            capture_output=True, text=True
+        )
+        if r.returncode != 0:
+            combined = r.stderr.lower() + r.stdout.lower()
+            if name in optional or any(kw in combined for kw in optional):
+                failed_optional.append((name, r.stderr))
+            else:
+                failed_required.append((name, r.stderr))
+
+    for name, err in failed_required:
+        fail(name, "could not be installed")
+        info(err.strip().splitlines()[-1][:200] if err.strip() else "unknown error")
+
+    for name, _ in failed_optional:
+        if name == "pesq":
+            warn("pesq", "Python dev headers missing (python3-dev) — PESQ metric will show n/a")
         else:
-            fail("dependency installation had errors")
-            info(result.stderr[:300].strip())
+            warn(name, "PortAudio not found — streaming inference unavailable")
+
+    if not failed_required:
+        ok("all required packages installed")
+
+
+def _download_librispeech_test_clean():
+    import tarfile
+    import urllib.request
+
+    url     = "https://www.openslr.org/resources/12/test-clean.tar.gz"
+    tar_path = DATASET_TEST_CLEAN.parent / "test-clean.tar.gz"
+
+    DATASET_TEST_CLEAN.parent.mkdir(parents=True, exist_ok=True)
+
+    def _progress(block_num, block_size, total_size):
+        downloaded = min(block_num * block_size, total_size)
+        if total_size > 0:
+            pct  = downloaded * 100 // total_size
+            mb_d = downloaded / 1024 / 1024
+            mb_t = total_size / 1024 / 1024
+            sys.stdout.write(f"\r          {pct:3d}%  {mb_d:.1f} / {mb_t:.0f} MB")
+        else:
+            sys.stdout.write(f"\r          {downloaded / 1024 / 1024:.1f} MB downloaded")
+        sys.stdout.flush()
+
+    info("downloading test-clean.tar.gz from openslr.org (~346 MB) ...")
+    sys.stdout.flush()
+    try:
+        urllib.request.urlretrieve(url, str(tar_path), reporthook=_progress)
+        print()
+    except Exception as e:
+        print()
+        tar_path.unlink(missing_ok=True)
+        return False, str(e)
+
+    info("extracting ...")
+    try:
+        with tarfile.open(tar_path) as tf:
+            tf.extractall(DATASET_TEST_CLEAN.parent)
+        tar_path.unlink()
+    except Exception as e:
+        tar_path.unlink(missing_ok=True)
+        return False, str(e)
+
+    return True, ""
 
 
 def check_dataset():
     step("Dataset  (LibriSpeech)")
 
-    # test-clean — required for inference
+    # test-clean — required for default inference; auto-download if missing
     if DATASET_TEST_CLEAN.exists():
         flac_files = list(DATASET_TEST_CLEAN.rglob("*.flac"))
         if flac_files:
-            ok(f"test-clean", f"{len(flac_files)} .flac files at {DATASET_TEST_CLEAN}")
+            ok("test-clean", f"{len(flac_files)} .flac files at {DATASET_TEST_CLEAN}")
         else:
             warn("test-clean directory exists but contains no .flac files")
     else:
-        fail(
-            "test-clean not found",
-            f"expected at {DATASET_TEST_CLEAN}"
-        )
-        info("to download:")
-        info(f"  mkdir -p {DATASET_TEST_CLEAN.parent}")
-        info(f"  cd {DATASET_TEST_CLEAN.parent}")
-        info( "  wget https://www.openslr.org/resources/12/test-clean.tar.gz")
-        info( "  tar -xzf test-clean.tar.gz")
+        info(f"test-clean not found at {DATASET_TEST_CLEAN}")
+        success, err = _download_librispeech_test_clean()
+        print()
+        if success:
+            flac_files = list(DATASET_TEST_CLEAN.rglob("*.flac"))
+            ok("test-clean", f"{len(flac_files)} .flac files  (downloaded)")
+        else:
+            fail("test-clean download failed", err)
+            info("manual fallback:")
+            info(f"  mkdir -p {DATASET_TEST_CLEAN.parent}")
+            info(f"  cd {DATASET_TEST_CLEAN.parent}")
+            info( "  wget https://www.openslr.org/resources/12/test-clean.tar.gz")
+            info( "  tar -xzf test-clean.tar.gz")
 
-    # train-clean-100 — only needed for training
+    # train-clean-100 — only needed for training, ~6 GB, not auto-downloaded
     if DATASET_TRAIN_CLEAN.exists():
         ok("train-clean-100", "training data present")
     else:
