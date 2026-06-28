@@ -187,10 +187,13 @@ def _download_librispeech_test_clean():
     import tarfile
     import urllib.request
 
-    url     = "https://www.openslr.org/resources/12/test-clean.tar.gz"
-    tar_path = DATASET_TEST_CLEAN.parent / "test-clean.tar.gz"
+    url      = "https://www.openslr.org/resources/12/test-clean.tar.gz"
+    # Extract one level above LibriSpeech/ because the archive already contains
+    # a LibriSpeech/ root folder — extracting into LibriSpeech/ would double it.
+    extract_dir = DATASET_TEST_CLEAN.parent.parent   # …/datasets/
+    tar_path    = extract_dir / "test-clean.tar.gz"
 
-    DATASET_TEST_CLEAN.parent.mkdir(parents=True, exist_ok=True)
+    extract_dir.mkdir(parents=True, exist_ok=True)
 
     def _progress(block_num, block_size, total_size):
         downloaded = min(block_num * block_size, total_size)
@@ -216,7 +219,7 @@ def _download_librispeech_test_clean():
     info("extracting ...")
     try:
         with tarfile.open(tar_path) as tf:
-            tf.extractall(DATASET_TEST_CLEAN.parent)
+            tf.extractall(extract_dir)
         tar_path.unlink()
     except Exception as e:
         tar_path.unlink(missing_ok=True)
