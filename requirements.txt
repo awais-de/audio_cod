@@ -18,6 +18,9 @@ pyyaml>=6.0
 # Progress bars
 tqdm>=4.66.0
 
+# Checkpoint download
+gdown>=4.7.0            # Google Drive large-file downloader (used by download_checkpoints.py)
+
 # Evaluation metrics — inference degrades gracefully if either is unavailable
 pystoi>=0.3.3           # pure Python, installs everywhere
 # pesq requires Python development headers (Python.h) to build from source:

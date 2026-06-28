@@ -133,23 +133,18 @@ def install_dependencies():
     if result.returncode == 0:
         ok("all packages from requirements.txt")
     else:
-        # Some packages may have failed (e.g. PyAudio without PortAudio).
-        # Try to identify which ones are actually importable.
         stderr = result.stderr.lower()
-        if "pyaudio" in stderr or "portaudio" in stderr:
-            warn(
-                "PyAudio could not be installed",
-                "PortAudio not found — streaming inference (infer_stream.py) unavailable"
-            )
-            # Retry without PyAudio
-            subprocess.run(
-                [PYTHON, "-m", "pip", "install", "-r", str(req_file),
-                 "--ignore-requires-python", "-q",
-                 "--constraint", "/dev/stdin"],
-                input="PyAudio\n",
-                capture_output=True, text=True
-            )
-            ok("remaining packages installed")
+        # Known optional packages that require system libraries to build from source.
+        # Inference works without them — degrade gracefully.
+        known_optional = {
+            "pyaudio":   "PortAudio not found — streaming inference unavailable",
+            "portaudio": "PortAudio not found — streaming inference unavailable",
+            "pesq":      "Python dev headers missing (python3-dev) — PESQ metric unavailable",
+        }
+        hit = next((msg for key, msg in known_optional.items() if key in stderr), None)
+        if hit:
+            warn("optional package could not be built", hit)
+            ok("all other packages installed")
         else:
             fail("dependency installation had errors")
             info(result.stderr[:300].strip())
@@ -187,7 +182,7 @@ def check_dataset():
 
 
 def check_checkpoints():
-    step("Model checkpoints  [PLACEHOLDER]")
+    step("Model checkpoints")
 
     present = {name: path for name, path in CHECKPOINTS.items() if path.exists()}
     missing = {name: path for name, path in CHECKPOINTS.items() if not path.exists()}
@@ -196,20 +191,29 @@ def check_checkpoints():
         mb = present[name].stat().st_size / 1024 / 1024
         ok(name, f"{mb:.0f} MB")
 
-    for name in missing:
-        fail(name, "not found")
+    if not missing:
+        return
 
-    if missing:
-        info("")
-        info("to download missing checkpoints:")
-        info("  export GITLAB_TOKEN=<your-pat>   # read_api scope")
-        info("  python scripts/download_checkpoints.py")
-        info("")
-        info("generate a PAT at:")
-        info("  https://gitlab.tu-ilmenau.de/-/user_settings/personal_access_tokens")
+    info(f"missing: {', '.join(missing)}")
+    info("downloading from Google Drive ...")
+    sys.stdout.flush()
 
-    # NOTE: automatic download will be integrated here in a future step.
-    # For now this is a manual step — see download_checkpoints.py.
+    result = subprocess.run(
+        [PYTHON, str(PROJECT_ROOT / "scripts" / "download_checkpoints.py")]
+    )
+
+    print()
+    if result.returncode == 0:
+        for name in missing:
+            path = CHECKPOINTS[name]
+            if path.exists():
+                mb = path.stat().st_size / 1024 / 1024
+                ok(name, f"{mb:.0f} MB  (downloaded)")
+            else:
+                fail(name, "still missing after download")
+    else:
+        for name in missing:
+            fail(name, "download failed — run scripts/download_checkpoints.py manually")
 
 
 def check_project_structure():
@@ -340,14 +344,18 @@ def print_summary():
         print("  python scripts/infer_offline.py")
     else:
         print("before running inference:")
-        if not test_clean_ok:
-            print("  1. download LibriSpeech test-clean  (see dataset step above)")
+        n = 1
         if not ckpt_present:
-            print("  2. export GITLAB_TOKEN=<pat>")
-            print("     python scripts/download_checkpoints.py")
-        print()
-        print("then:")
-        print("  python scripts/infer_offline.py")
+            print(f"  {n}. python scripts/download_checkpoints.py")
+            n += 1
+        if not test_clean_ok:
+            print(f"  {n}. download LibriSpeech test-clean  (see dataset step above)")
+            print(f"     or use your own audio file:")
+            print(f"     python scripts/infer_offline.py --input /path/to/audio.wav")
+        else:
+            print()
+            print("then:")
+            print("  python scripts/infer_offline.py")
 
     print("=" * 60)
 
