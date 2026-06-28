@@ -49,7 +49,7 @@ Waveform (16 kHz)
 ## Installation
 
 ```bash
-git clone https://github.com/talhar007/audio_cod.git
+git clone https://github.com/awais-de/audio_cod.git
 cd audio_cod
 python -m venv venv
 source venv/bin/activate
@@ -60,27 +60,24 @@ pip install -r requirements.txt
 
 ## Quick Start — Inference
 
+**Encode + decode in one step:**
 ```bash
-python scripts/inference.py --input speech.wav --output reconstructed.wav
+python scripts/infer_file.py speech.wav
+# output: speech_reconstructed.wav
 ```
 
-The script reads all architecture parameters from the checkpoint automatically. No config file needed.
-
-**Example output:**
-```
-Bitrate   : 5.5 kbps  (cap: 9.6 kbps)
-Latency   : 100 ms algo delay
-PESQ (WB) : 2.740
-STOI      : 0.872
-```
-
-**With a specific checkpoint:**
+**Or as separate steps:**
 ```bash
-python scripts/inference.py \
-    --input speech.wav \
-    --output reconstructed.wav \
-    --checkpoint checkpoints_active/temporal_phaseC/best.pt
+python scripts/encode.py speech.wav speech.nacodec
+python scripts/decode.py speech.nacodec reconstructed.wav
 ```
+
+**Real-time microphone demo:**
+```bash
+python scripts/infer_stream.py
+```
+
+All scripts read model architecture from the checkpoint automatically — no config file needed.
 
 > **Note:** Pre-trained checkpoints (~84 MB each) are not stored in this repository.  
 > Download from: [TU Ilmenau SharePoint](https://tuilmenau365-my.sharepoint.com/:f:/g/personal/m_awais_tu-ilmenau_de/IgDKZN_RnOjaTrwfdK77ocxuAZxSG3XjEyz0cB3_VOwCYZs?e=HodLGX)  
@@ -91,34 +88,41 @@ python scripts/inference.py \
 ## Reproduce the Comparison
 
 ```bash
-# AAC vs EnCodec vs Ours (5 speakers, 5 bitrates)
-python scripts/compare_encodec.py
-
-# AAC vs Ours only
-python scripts/compare_phaseB.py
+python scripts/03b_phaseC_eval.py
 ```
 
-Audio output saved to `comparisons/encodec_comparison/` — each speaker folder contains:
-`source.wav`, `aac_Xkbps.wav`, `encodec_1.5kbps.wav`, `encodec_3.0kbps.wav`, `encodec_6.0kbps.wav`, `ours_3bit_Xkbps.wav`
+Runs AAC vs EnCodec vs Ours on 5 LibriSpeech test-clean speakers at multiple bitrates.
 
 ---
 
 ## Training
 
-To reproduce training from scratch:
+To reproduce the full training curriculum from scratch:
 
 ```bash
 # Phase A: Learn temporal compression (float32, no quantization)
-python scripts/finetune_temporal_phaseA.py
+python scripts/01_phaseA_train.py
 
 # Phase B: Fine-tune with 3-bit QAT
-python scripts/finetune_temporal_phaseB.py
+python scripts/02_phaseB_train.py
 
 # Phase C: Continue with noise augmentation
-python scripts/finetune_temporal_phaseC.py
+python scripts/03a_phaseC_train.py
+
+# Phase D: Uniform noise proxy (VAE-style QAT)
+python scripts/04a_phaseD_train.py
+
+# Phase E: Log-magnitude STFT loss
+python scripts/06a_phaseE_train.py
+
+# Phase F: Triple combined spectral loss
+python scripts/07a_phaseF_train.py
+
+# Phase G: Fine-polish pass (lower LR)
+python scripts/08a_phaseG_train.py
 ```
 
-Requires LibriSpeech `train-clean-100` (~6 GB). Update paths in `config/paths.yaml`.
+Each phase loads from the previous phase's `best.pt`. Requires LibriSpeech `train-clean-100` (~6 GB). Update paths in `config/paths.yaml`.
 
 ---
 
@@ -127,30 +131,38 @@ Requires LibriSpeech `train-clean-100` (~6 GB). Update paths in `config/paths.ya
 ```
 audio_cod/
 ├── src/
-│   ├── model.py              Core architecture (encoder, bottleneck, decoder)
-│   └── paths.py              Dataset/checkpoint path resolution
+│   ├── model.py               Core architecture (encoder, bottleneck, decoder)
+│   ├── train.py               Base training loop and dataset utilities
+│   ├── quantization.py        Uniform quantizer and entropy coder
+│   ├── rate_distortion_loss.py  R-D loss (distortion + rate penalty)
+│   ├── entropy_model.py       Learned GMM entropy model
+│   └── paths.py               Dataset/checkpoint path resolution
 ├── scripts/
-│   ├── inference.py          ← Run this for compression/reconstruction
-│   ├── compare_encodec.py    3-way comparison: AAC vs EnCodec vs Ours
-│   ├── finetune_temporal_phaseA.py   Phase A training
-│   ├── finetune_temporal_phaseB.py   Phase B QAT training
-│   ├── finetune_temporal_phaseC.py   Phase C noise augmentation
-│   └── archive/              Old experimental scripts
-├── checkpoints_active/
-│   ├── phase1_base/          Base model (PESQ=4.27, no compression)
-│   ├── temporal_phaseA/      Phase A best checkpoint
-│   ├── temporal_phaseB/      Phase B best checkpoint
-│   ├── temporal_phaseC/      Phase C best checkpoint ← current best
-│   └── archive/              All previous runs preserved
-├── comparisons/
-│   └── encodec_comparison/   Audio examples + metrics CSV + report
-├── runs/
-│   ├── RUNS.md               Master log of all training runs
-│   └── temporal_phaseC/      Phase C training history + log
-├── docs/
-│   └── progress_report.md    Report submitted to supervisor
-├── config/paths.yaml         Dataset paths
-└── requirements.txt
+│   ├── encode.py              Compress audio to .nacodec binary
+│   ├── decode.py              Decompress .nacodec to audio
+│   ├── infer_file.py          Encode + decode in one command
+│   ├── infer_stream.py        Real-time microphone demo
+│   ├── 01_phaseA_train.py     Phase A: float32 temporal compression
+│   ├── 02_phaseB_train.py     Phase B: 3-bit QAT
+│   ├── 03a_phaseC_train.py    Phase C: noise augmentation
+│   ├── 03b_phaseC_eval.py     Phase C: evaluation vs AAC / EnCodec
+│   ├── 04a_phaseD_train.py    Phase D: uniform noise proxy
+│   ├── 04b_phaseD_eval.py
+│   ├── 05a_phaseDvae_train.py Phase D-VAE: variational bottleneck
+│   ├── 05b_phaseDvae_eval.py
+│   ├── 06a_phaseE_train.py    Phase E: log-magnitude STFT loss
+│   ├── 06b_phaseE_eval.py
+│   ├── 07a_phaseF_train.py    Phase F: triple combined spectral loss
+│   ├── 07b_phaseF_eval.py
+│   ├── 08a_phaseG_train.py    Phase G: fine-polish pass
+│   └── 08b_phaseG_eval.py
+├── checkpoints_active/        Trained weights (not tracked — see SharePoint link above)
+├── config/
+│   ├── paths.yaml             Dataset paths
+│   ├── training.yaml          Base training config
+│   └── training_improved.yaml
+├── requirements.txt
+└── setup.py
 ```
 
 ---
@@ -168,6 +180,7 @@ pesq
 pystoi
 encodec          # for comparison only
 av               # for AAC comparison only (pip install av)
+sounddevice      # for real-time streaming demo only
 ```
 
 ---
