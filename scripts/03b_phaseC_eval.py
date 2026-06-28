@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Three-way comparison: AAC vs EnCodec vs Our Neural Codec (Phase B)
+Three-way comparison: AAC vs EnCodec vs NACodec — 3-bit QAT (Phase C)
 ===================================================================
 All evaluated on the same 5 LibriSpeech test-clean speakers, 5s clips.
 
-EnCodec operates at 24kHz internally — we resample our 16kHz audio up,
+EnCodec operates at 24kHz internally — we resample 16kHz audio up,
 encode/decode, then resample back to 16kHz for fair metric comparison.
 
-Our codec: 6.3 kbps (3-bit QAT, temporal stride)
+NACodec: 6.3 kbps (3-bit QAT, temporal stride)
 EnCodec:   1.5 / 3.0 / 6.0 kbps (for context at multiple points)
 AAC:       ~15.6 kbps (minimum floor at 16kHz mono)
 """
@@ -135,9 +135,9 @@ def encodec_encode_decode(audio_np, sr, bandwidth_kbps, device):
     return decoded_16k.astype(np.float32), actual_kbps
 
 
-# Our Neural Codec (Phase B, 3-bit QAT)
+# NACodec — 3-bit QAT (Phase C)
 
-def load_our_model(checkpoint_path, device):
+def load_nacodec_model(checkpoint_path, device):
     ckpt = torch.load(checkpoint_path, map_location='cpu')
     state = ckpt.get('model_state_dict', ckpt)
     d_model = ckpt.get('d_model', 384)
@@ -161,7 +161,7 @@ def load_our_model(checkpoint_path, device):
     return model, ckpt
 
 
-def our_encode_decode(model, audio_np, sr, device, chunk_sec=1.0):
+def nacodec_encode_decode(model, audio_np, sr, device, chunk_sec=1.0):
     num_levels = 8
     chunk_size = int(chunk_sec * sr)
     recon_chunks, total_bits, latencies = [], 0, []
@@ -230,7 +230,7 @@ def main():
 
     from datetime import datetime
     timestamp = datetime.now().strftime('%Y-%m-%d')
-    out_dir = PROJECT_ROOT / 'comparisons' / f'{timestamp}_phaseC_aac_vs_encodec_vs_ours'
+    out_dir = PROJECT_ROOT / 'comparisons' / f'{timestamp}_phaseC_aac_vs_encodec_vs_nacodec'
     out_dir.mkdir(parents=True, exist_ok=True)
 
     paths = get_dataset_paths()
@@ -244,15 +244,15 @@ def main():
     test_files = list(speakers.values())
 
     print(f"\n{'='*72}")
-    print("THREE-WAY COMPARISON: AAC vs EnCodec vs Our Neural Codec (Phase B)")
+    print("THREE-WAY COMPARISON: AAC vs EnCodec vs NACodec — 3-bit QAT (Phase C)")
     print(f"{'='*72}\n")
 
-    our_ckpt = PROJECT_ROOT / 'checkpoints_active/temporal_phaseC/best.pt'
-    print("Loading our Phase B model...")
-    our_model, our_ckpt_meta = load_our_model(our_ckpt, device)
-    print(f"  bottleneck_dim={our_ckpt_meta.get('bottleneck_dim')}, "
-          f"temporal_stride={our_ckpt_meta.get('temporal_stride')}, "
-          f"best_loss={our_ckpt_meta.get('train_loss', 0):.4f}\n")
+    nacodec_ckpt = PROJECT_ROOT / 'checkpoints_active/temporal_phaseC/best.pt'
+    print("Loading NACodec (Phase C)....")
+    nacodec_model, nacodec_meta = load_nacodec_model(nacodec_ckpt, device)
+    print(f"  bottleneck_dim={nacodec_meta.get('bottleneck_dim')}, "
+          f"temporal_stride={nacodec_meta.get('temporal_stride')}, "
+          f"best_loss={nacodec_meta.get('train_loss', 0):.4f}\n")
 
     all_results = []
 
@@ -290,14 +290,14 @@ def main():
             result.update({f'{key}_kbps': enc_kbps, f'{key}_pesq': enc_pesq, f'{key}_stoi': enc_stoi})
             print(f"  EnCodec {bw:4.1f}  → {enc_kbps:.1f} kbps  PESQ={enc_pesq:.3f}  STOI={enc_stoi:.3f}")
 
-        # Our codec — full-clip encode to avoid chunk boundary artifacts
-        our_dec, our_kbps, our_lat = our_encode_decode(our_model, audio, SR, device,
+        # NACodec — full-clip encode to avoid chunk boundary artifacts
+        nacodec_dec, nacodec_kbps, nacodec_lat = nacodec_encode_decode(nacodec_model, audio, SR, device,
                                                         chunk_sec=CLIP_SEC)
-        our_pesq, our_stoi = compute_metrics(audio, our_dec, SR)
-        sf.write(sample_dir / f'ours_3bit_{our_kbps:.0f}kbps.wav', our_dec, SR)
-        result.update({'our_kbps': our_kbps, 'our_pesq': our_pesq,
-                        'our_stoi': our_stoi, 'our_lat': our_lat})
-        print(f"  Ours (3-bit) → {our_kbps:.1f} kbps  PESQ={our_pesq:.3f}  STOI={our_stoi:.3f}  lat={our_lat:.0f}ms")
+        nacodec_pesq, nacodec_stoi = compute_metrics(audio, nacodec_dec, SR)
+        sf.write(sample_dir / f'nacodec_3bit_{nacodec_kbps:.0f}kbps.wav', nacodec_dec, SR)
+        result.update({'nacodec_kbps': nacodec_kbps, 'nacodec_pesq': nacodec_pesq,
+                        'nacodec_stoi': nacodec_stoi, 'nacodec_lat': nacodec_lat})
+        print(f"  NACodec (3-bit) → {nacodec_kbps:.1f} kbps  PESQ={nacodec_pesq:.3f}  STOI={nacodec_stoi:.3f}  lat={nacodec_lat:.0f}ms")
 
         all_results.append(result)
         print()
@@ -324,9 +324,9 @@ def main():
             f"{mean([r[f'{key}_stoi'] for r in all_results]):>8.3f}"
         )
     lines += [
-        f"{'Ours (3-bit QAT)':<22} {mean([r['our_kbps'] for r in all_results]):>9.1f}k "
-        f"{mean([r['our_pesq'] for r in all_results]):>8.3f} "
-        f"{mean([r['our_stoi'] for r in all_results]):>8.3f}",
+        f"{'NACodec (3-bit QAT)':<22} {mean([r['nacodec_kbps'] for r in all_results]):>9.1f}k "
+        f"{mean([r['nacodec_pesq'] for r in all_results]):>8.3f} "
+        f"{mean([r['nacodec_stoi'] for r in all_results]):>8.3f}",
         SEP,
     ]
     report = '\n'.join(lines)
@@ -341,14 +341,14 @@ def main():
         for bw in ENCODEC_BANDWIDTHS:
             k = f'enc{bw}'
             header += f',{k}_kbps,{k}_pesq,{k}_stoi'
-        header += ',our_kbps,our_pesq,our_stoi,our_lat_ms'
+        header += ',nacodec_kbps,nacodec_pesq,nacodec_stoi,nacodec_lat_ms'
         f.write(header + '\n')
         for r in all_results:
             row = f"{r['speaker']},{r['file']},{r['aac_kbps']:.2f},{r['aac_pesq']:.4f},{r['aac_stoi']:.4f}"
             for bw in ENCODEC_BANDWIDTHS:
                 k = f'enc{bw}'
                 row += f",{r[f'{k}_kbps']:.2f},{r[f'{k}_pesq']:.4f},{r[f'{k}_stoi']:.4f}"
-            row += f",{r['our_kbps']:.2f},{r['our_pesq']:.4f},{r['our_stoi']:.4f},{r['our_lat']:.1f}"
+            row += f",{r['nacodec_kbps']:.2f},{r['nacodec_pesq']:.4f},{r['nacodec_stoi']:.4f},{r['nacodec_lat']:.1f}"
             f.write(row + '\n')
 
     print(f"\nSaved: {out_dir}/report.txt")
