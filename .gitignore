@@ -102,3 +102,6 @@ comparisons/
 
 # Inference artifacts (per-run outputs from infer_offline.py)
 inference_runs/
+
+# Local-only tooling — not for distribution
+scripts/upload_checkpoints.py
