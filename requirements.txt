@@ -1,56 +1,47 @@
-# =============================================================================
-# Neural Audio Codec - Complete Requirements
-# Python 3.8+ Required
-# =============================================================================
+# Neural Audio Codec — Python 3.8+
 
-# Core Deep Learning Framework
-# =============================================================================
+# Deep learning
 torch>=2.0.0
-torchaudio>=2.0.0
+torchaudio>=2.0.0       # MelSpectrogram (losses.py), audio resampling (train.py, 03b eval)
 
-# Scientific Computing & Data Processing
-# =============================================================================
-numpy>=1.24.0,<2.0.0
-scipy>=1.10.0
+# Scientific computing
+numpy>=1.24.0           # numpy 2.x is supported
+scipy>=1.10.0           # transitive dep of pesq / pystoi
 
-# Audio Processing
-# =============================================================================
+# Audio I/O
 soundfile>=0.12.1
-PyAudio>=0.2.13
+av>=12.0.0              # PyAV — AAC encode/decode comparison in 03b_phaseC_eval.py
 
-# Configuration Management
-# =============================================================================
+# Configuration
 pyyaml>=6.0
 
-# Progress & Logging
-# =============================================================================
+# Progress bars
 tqdm>=4.66.0
 
-# Audio Quality Metrics (CRITICAL for evaluation)
-# =============================================================================
+# Evaluation metrics — inference degrades gracefully if either is unavailable
+pystoi>=0.3.3           # pure Python, installs everywhere
+# pesq requires Python development headers (Python.h) to build from source:
+#   Ubuntu/Debian: sudo apt install python3-dev
+#   macOS:         headers included with Python — no extra step
+#   Windows:       headers included with the official Python installer
 pesq>=0.0.4
-pystoi>=0.3.3
 
-# =============================================================================
-# Installation Instructions
-# =============================================================================
-# Basic installation:
-#   pip install -r requirements.txt
+# ── Optional ──────────────────────────────────────────────────────────────────
 #
-# For PyAudio on macOS:
-#   brew install portaudio
-#   pip install pyaudio
+# PyAudio — only required for real-time streaming (scripts/archive/infer_stream.py)
+# Needs the PortAudio system library installed first:
+#   Linux:   sudo apt install libportaudio2
+#   macOS:   brew install portaudio
+#   Windows: pip install pipwin && pipwin install pyaudio
+# Then: pip install PyAudio
 #
-# For PyAudio on Ubuntu/Debian:
-#   sudo apt-get install portaudio19-dev python3-pyaudio
-#   pip install pyaudio
+# ── GPU installation ──────────────────────────────────────────────────────────
 #
-# For PyAudio on Windows:
-#   pip install pipwin
-#   pipwin install pyaudio
-#
-# GPU Support (CUDA 12.1):
+# CUDA 12.1:
 #   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
 #
-# GPU Support (CUDA 11.8):
+# CUDA 11.8:
 #   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu118
+#
+# CPU only (no CUDA):
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
