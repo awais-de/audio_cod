@@ -64,18 +64,10 @@ def main():
     ckpt_path = args.checkpoint or find_checkpoint(PROJECT_ROOT)
     device    = torch.device(args.device)
 
-    print(f"\n{'='*56}")
-    print("ENCODE")
-    print(f"{'='*56}")
-    print(f"  Input      : {args.input}")
-    print(f"  Output     : {args.output}")
-    print(f"  Checkpoint : {ckpt_path}")
-    print(f"  Device     : {device}")
-
     model, ckpt = load_model(ckpt_path, device)
-    print(f"  Model      : Phase {ckpt.get('phase','?')}  "
-          f"d_model={ckpt.get('d_model',384)}  "
-          f"bottleneck={ckpt.get('bottleneck_dim',32)}\n")
+    print(f"checkpoint:  {ckpt_path.parent.name}/{ckpt_path.name}  "
+          f"(phase={ckpt.get('phase','?')}, d_model={ckpt.get('d_model',384)}, "
+          f"bottleneck={ckpt.get('bottleneck_dim',32)})")
 
     # Load + normalise audio
     SR = args.sample_rate
@@ -90,7 +82,7 @@ def main():
     duration  = n_samples / SR
     chunk_sz  = int(args.chunk_sec * SR)
 
-    print(f"  Audio      : {duration:.2f}s @ {SR} Hz  ({n_samples} samples)")
+    print(f"input:       {args.input}  ({duration:.2f}s @ {SR} Hz, {n_samples} samples)")
 
     # Encode each chunk
     chunks = []
@@ -107,8 +99,8 @@ def main():
             q    = np.clip(np.round((z - zmin) / scale), 0, NUM_LEVELS - 1).astype(np.uint8)
             comp = zlib.compress(q.tobytes(), level=9)
             chunks.append((zmin, zmax, q.shape, comp))
-            print(f"  chunk {len(chunks):3d}/{(n_samples + chunk_sz - 1)//chunk_sz}"
-                  f"  z_shape={q.shape}  compressed={len(comp)} bytes", flush=True)
+            print(f"chunk {len(chunks):3d}/{(n_samples + chunk_sz - 1)//chunk_sz}"
+                  f"  latent={q.shape}  compressed={len(comp)}B", flush=True)
 
     # Write binary
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -128,14 +120,9 @@ def main():
     orig_kb     = n_samples * 2 / 1024         # 16-bit PCM equivalent
     compression = orig_kb / file_kb
 
-    print(f"\n{'='*56}")
-    print(f"  Chunks     : {len(chunks)}")
-    print(f"  Bitrate    : {kbps:.1f} kbps")
-    print(f"  File size  : {file_kb:.1f} KB  (vs {orig_kb:.0f} KB uncompressed PCM)")
-    print(f"  Compression: {compression:.0f}×")
-    print(f"{'='*56}")
-    print(f"\nDone.  Decode with:")
-    print(f"  python scripts/decode.py {args.output} <output.wav>")
+    print(f"bitrate:     {kbps:.2f} kbps")
+    print(f"file_size:   {file_kb:.1f} KB  ({orig_kb:.0f} KB uncompressed PCM, {compression:.0f}× reduction)")
+    print(f"output:      {args.output}")
 
 
 if __name__ == '__main__':

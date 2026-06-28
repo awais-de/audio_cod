@@ -99,3 +99,6 @@ archive/
 
 # Comparisons (audio files + reports, local only)
 comparisons/
+
+# Inference artifacts (per-run outputs from infer_offline.py)
+inference_runs/

@@ -42,18 +42,10 @@ def main():
     ckpt_path = args.checkpoint or find_checkpoint(PROJECT_ROOT)
     device    = torch.device(args.device)
 
-    print(f"\n{'='*56}")
-    print("DECODE")
-    print(f"{'='*56}")
-    print(f"  Input      : {args.input}")
-    print(f"  Output     : {args.output}")
-    print(f"  Checkpoint : {ckpt_path}")
-    print(f"  Device     : {device}")
-
     model, ckpt = load_model(ckpt_path, device)
-    print(f"  Model      : Phase {ckpt.get('phase','?')}  "
-          f"d_model={ckpt.get('d_model',384)}  "
-          f"bottleneck={ckpt.get('bottleneck_dim',32)}\n")
+    print(f"checkpoint:  {ckpt_path.parent.name}/{ckpt_path.name}  "
+          f"(phase={ckpt.get('phase','?')}, d_model={ckpt.get('d_model',384)}, "
+          f"bottleneck={ckpt.get('bottleneck_dim',32)})")
 
     with open(args.input, 'rb') as f:
         # Parse header
@@ -64,7 +56,7 @@ def main():
             )
 
         duration = n_samples / sr
-        print(f"  Audio info : {duration:.2f}s @ {sr} Hz  ({n_chunks} chunks)")
+        print(f"input:       {args.input.name}  ({duration:.2f}s @ {sr}Hz, {n_chunks} chunks)")
 
         recon_chunks = []
         total_bits   = 0
@@ -76,20 +68,16 @@ def main():
             comp     = f.read(comp_len)
             total_bits += comp_len * 8
 
-            # Dequantise
             q     = np.frombuffer(zlib.decompress(comp), dtype=np.uint8).reshape(shape)
             scale = (z_max - z_min) / (NUM_LEVELS - 1) + 1e-8
             z_rec = q.astype(np.float32) * scale + z_min
 
-            # Decode
             with torch.no_grad():
                 x_recon = model.decode(torch.from_numpy(z_rec).unsqueeze(0).to(device))
             recon_chunks.append(x_recon.squeeze().cpu().numpy())
 
-            print(f"  chunk {i+1:3d}/{n_chunks}  z_shape={shape}  "
-                  f"{comp_len} bytes  →  {len(recon_chunks[-1])} samples", flush=True)
+            print(f"chunk {i+1:3d}/{n_chunks}  latent={shape}  {comp_len}B  → {len(recon_chunks[-1])} samples", flush=True)
 
-    # Assemble and trim to original length
     recon = np.concatenate(recon_chunks)
     if len(recon) >= n_samples:
         recon = recon[:n_samples]
@@ -101,11 +89,9 @@ def main():
     sf.write(args.output, recon, sr)
 
     kbps = total_bits / duration / 1000
-    print(f"\n{'='*56}")
-    print(f"  Bitrate    : {kbps:.1f} kbps")
-    print(f"  Samples    : {len(recon)}  ({duration:.2f}s @ {sr} Hz)")
-    print(f"{'='*56}")
-    print(f"\nDone.  Output written to: {args.output}")
+    print(f"bitrate:     {kbps:.2f} kbps")
+    print(f"samples:     {len(recon)}  ({duration:.2f}s @ {sr}Hz)")
+    print(f"output:      {args.output}")
 
 
 if __name__ == '__main__':
