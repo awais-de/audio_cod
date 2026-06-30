@@ -95,6 +95,72 @@ def encode_decode(model, audio: np.ndarray, sr: int, device, chunk_sec: float = 
     return recon.astype(np.float32), kbps
 
 
+def compute_compression_stats(model, audio: np.ndarray, sr: int, device,
+                              chunk_sec: float = 5.0) -> dict:
+    """
+    Run the encode→quantize→compress pipeline and return compression statistics.
+    Does not decode — purely measures the latent representation structure.
+
+    Returns a dict with:
+      raw_bits        — theoretical size at 3 bits × frames × 32 dims
+      compressed_bits — actual zlib output size in bits
+      compression_ratio — raw / compressed  (>1 means zlib saved space)
+      effective_kbps  — compressed_bits / audio duration
+      theoretical_kbps — raw_bits / audio duration (always ~9.6 kbps)
+      dim_entropy     — (32,) array: Shannon entropy per latent dimension
+                        (max = 3.0 bits for uniform distribution over 8 levels)
+      dim_utilisation — (32,) array: fraction of the 8 levels actually used per dim
+    """
+    num_levels = 8
+    chunk_size  = int(chunk_sec * sr)
+    duration    = len(audio) / sr
+
+    raw_bits        = 0
+    compressed_bits = 0
+    all_q           = []   # accumulate quantized values for entropy calculation
+
+    with torch.no_grad():
+        for start in range(0, len(audio), chunk_size):
+            chunk = audio[start:start + chunk_size]
+            if len(chunk) < 160:
+                continue
+            x   = torch.FloatTensor(chunk).unsqueeze(0).unsqueeze(0).to(device)
+            z   = model.encode(x)
+            z_np = z.squeeze(0).cpu().numpy()          # (frames, dims)
+
+            z_min  = float(z_np.min())
+            z_max  = float(z_np.max())
+            scale  = (z_max - z_min) / (num_levels - 1) + 1e-8
+            q      = np.clip(np.round((z_np - z_min) / scale),
+                             0, num_levels - 1).astype(np.uint8)
+
+            raw_bits        += q.size * 3              # 3 bits per scalar
+            compressed_bits += len(zlib.compress(q.tobytes(), level=9)) * 8
+            all_q.append(q)                            # (frames, 32)
+
+    q_all = np.concatenate(all_q, axis=0)             # (total_frames, 32)
+
+    # Per-dimension Shannon entropy and level utilisation
+    dim_entropy     = np.zeros(q_all.shape[1])
+    dim_utilisation = np.zeros(q_all.shape[1])
+    for d in range(q_all.shape[1]):
+        counts = np.bincount(q_all[:, d], minlength=num_levels).astype(float)
+        probs  = counts / counts.sum()
+        nonzero = probs[probs > 0]
+        dim_entropy[d]     = float(-np.sum(nonzero * np.log2(nonzero)))
+        dim_utilisation[d] = float(np.sum(counts > 0)) / num_levels
+
+    return {
+        'raw_bits':          raw_bits,
+        'compressed_bits':   compressed_bits,
+        'compression_ratio': raw_bits / compressed_bits if compressed_bits > 0 else 0.0,
+        'effective_kbps':    compressed_bits / duration / 1000,
+        'theoretical_kbps':  raw_bits / duration / 1000,
+        'dim_entropy':       dim_entropy,        # (32,) — bits per symbol per dim
+        'dim_utilisation':   dim_utilisation,    # (32,) — fraction of levels used
+    }
+
+
 def compute_metrics(ref: np.ndarray, deg: np.ndarray, sr: int):
     """Returns (PESQ_WB, STOI) or (None, None) if libraries unavailable."""
     n = min(len(ref), len(deg))
