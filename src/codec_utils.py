@@ -22,11 +22,13 @@ except ImportError:
 
 
 def find_checkpoint(project_root: Path) -> Path:
-    """Return the best available checkpoint (G→F→C priority)."""
+    """Return the best available checkpoint. Phase C is preferred — it achieves
+    the highest PESQ/STOI scores; later spectral-loss phases trade off these
+    metrics for a different perceptual target."""
     for p in [
+        project_root / 'checkpoints_active/temporal_phaseC/best.pt',
         project_root / 'checkpoints_active/temporal_phaseG/best.pt',
         project_root / 'checkpoints_active/temporal_phaseF/best.pt',
-        project_root / 'checkpoints_active/temporal_phaseC/best.pt',
     ]:
         if p.exists():
             return p

@@ -208,7 +208,7 @@ def main():
     parser.add_argument('--input', type=str, default=None,
                         help='Audio file to process (default: first .flac in LibriSpeech test-clean)')
     parser.add_argument('--checkpoint', type=str, default=None,
-                        help='Checkpoint path (default: best available G→F→C)')
+                        help='Checkpoint path (default: phaseC — highest PESQ/STOI)')
     parser.add_argument('--chunk-sec', type=float, default=1.0,
                         help='Chunk duration in seconds (default: 1.0)')
     parser.add_argument('--sample-rate', type=int, default=16000,
