@@ -276,11 +276,11 @@ def main():
     report = '\n'.join(lines)
     print(report)
 
-    with open(out_dir / 'report.txt', 'w') as f:
+    with open(out_dir / 'report.txt', 'w', encoding='utf-8') as f:
         f.write(report)
 
     # CSV
-    with open(out_dir / 'metrics.csv', 'w') as f:
+    with open(out_dir / 'metrics.csv', 'w', encoding='utf-8') as f:
         header = 'speaker,file,aac_kbps,aac_pesq,aac_stoi'
         for bw in ENCODEC_BANDWIDTHS:
             k = f'enc{bw}'

@@ -47,15 +47,18 @@ metrics.json         bitrate, PESQ-WB, STOI, SNR, run metadata
 Evaluated on LibriSpeech test-clean (5 speakers, 5-second clips, 16 kHz mono).  
 Phase C checkpoint — 3-bit uniform quantization + zlib entropy coding.
 
+Evaluated on LibriSpeech test-clean (5 speakers, 5-second clips, 16 kHz mono).
+
 | Codec | Bitrate | PESQ-WB | STOI |
 |---|---|---|---|
-| AAC | 15.6 kbps | 2.763 | 0.879 |
-| EnCodec 1.5 kbps (Meta) | 1.5 kbps | 2.539 | 0.812 |
-| EnCodec 3.0 kbps (Meta) | 3.0 kbps | 2.681 | 0.854 |
-| EnCodec 6.0 kbps (Meta) | 6.0 kbps | 2.785 | 0.885 |
-| **Ours — Phase C** | **5.8 kbps** | **2.645** | **0.843** |
+| AAC | ~16 kbps | 1.641 | 0.855 |
+| EnCodec 1.5 kbps (Meta) | 1.5 kbps | 1.611 | 0.829 |
+| EnCodec 3.0 kbps (Meta) | 3.0 kbps | 2.148 | 0.880 |
+| EnCodec 6.0 kbps (Meta) | 6.0 kbps | 2.842 | 0.922 |
+| Ours — Phase C | 5.7 kbps | 1.202 | 0.733 |
+| Ours — Phase G (default) | 5.9 kbps | 1.279 | 0.766 |
 
-Our codec at 5.8 kbps is competitive with EnCodec at 3.0 kbps using a simpler quantization scheme (3-bit uniform + zlib vs. residual vector quantization + GAN training). Phase G (the default checkpoint) continues training beyond Phase C with combined spectral loss and fine-polish passes.
+Phase G is the best-performing checkpoint across all phases. The quality gap versus EnCodec at matched bitrate reflects the fundamental difference in quantization scheme: 3-bit uniform scalar quantization versus residual vector quantization. The training progression from Phase C to Phase G yields a consistent improvement (+0.077 PESQ, +0.033 STOI) through combined spectral losses and fine-polish training.
 
 To reproduce this table:
 

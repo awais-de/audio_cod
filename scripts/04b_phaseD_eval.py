@@ -126,10 +126,10 @@ def main():
 
     print(summary)
 
-    with open(out_dir / 'report.txt', 'w') as f:
+    with open(out_dir / 'report.txt', 'w', encoding='utf-8') as f:
         f.write(summary)
 
-    with open(out_dir / 'metrics.csv', 'w') as f:
+    with open(out_dir / 'metrics.csv', 'w', encoding='utf-8') as f:
         f.write('speaker,file,phaseC_kbps,phaseC_pesq,phaseC_stoi,phaseD_kbps,phaseD_pesq,phaseD_stoi\n')
         for r in all_results:
             f.write(
