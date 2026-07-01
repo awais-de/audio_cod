@@ -66,7 +66,12 @@ To reproduce this table:
 python scripts/03b_phaseC_eval.py
 ```
 
-> **Note on PESQ:** the `pesq` package requires Python development headers to build (`python3-dev` on Linux, included on macOS/Windows). Without it, PESQ shows `n/a` and STOI is reported instead. `bootstrap.py` reports which metrics are available on your machine.
+> **Note on PESQ:** the `pesq` package compiles a C extension at install time and requires platform build tools:
+> - **Linux:** `sudo apt install python3-dev` (Debian/Ubuntu) or `sudo dnf install python3-devel` (RHEL/CentOS/Fedora), then `pip install pesq`
+> - **macOS:** install Xcode Command Line Tools (`xcode-select --install`), then `pip install pesq`
+> - **Windows:** install [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (select the "Desktop development with C++" workload), then `pip install pesq`
+>
+> Without it, PESQ shows `n/a` and STOI is reported instead. `bootstrap.py` reports which metrics are available on your machine.
 
 ---
 
