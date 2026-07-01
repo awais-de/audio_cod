@@ -246,6 +246,22 @@ def main():
     print(f"plot:        {out_dir}/rd_curve.png  (if matplotlib available)")
 
 
+def _label_offsets(kbps_list, proximity=2.0):
+    """Return per-point (dx, dy) offsets; stagger vertically when neighbours are close."""
+    offsets = []
+    n = len(kbps_list)
+    for i, k in enumerate(kbps_list):
+        close_prev = i > 0     and abs(k - kbps_list[i - 1]) < proximity
+        close_next = i < n - 1 and abs(k - kbps_list[i + 1]) < proximity
+        if close_next:
+            offsets.append((4, -13))   # push down when next label would overlap
+        elif close_prev:
+            offsets.append((4, 6))     # push up when previous label was pushed down
+        else:
+            offsets.append((4, 4))
+    return offsets
+
+
 def _plot(sweep_summary, out_dir):
     try:
         import matplotlib
@@ -259,10 +275,11 @@ def _plot(sweep_summary, out_dir):
     fig.suptitle('Rate-Distortion: Scalar Quantization (Phase G) vs EnCodec (RVQ)',
                  fontsize=12, fontweight='bold')
 
-    our_kbps  = [s['kbps']  for s in sweep_summary]
-    our_pesq  = [s['pesq']  for s in sweep_summary]
-    our_stoi  = [s['stoi']  for s in sweep_summary]
+    our_kbps   = [s['kbps']  for s in sweep_summary]
+    our_pesq   = [s['pesq']  for s in sweep_summary]
+    our_stoi   = [s['stoi']  for s in sweep_summary]
     bit_labels = [f"{s['bits']}b" for s in sweep_summary]
+    offsets    = _label_offsets(our_kbps)
 
     enc_kbps = [r['kbps']  for r in ENCODEC_REF]
     enc_pesq = [r['pesq']  for r in ENCODEC_REF]
@@ -275,10 +292,10 @@ def _plot(sweep_summary, out_dir):
         valid_p = [p for p in our_pesq if not math.isnan(p)]
         ax1.plot(valid_k, valid_p, 'o-', color='steelblue',
                  label='Ours (scalar)', linewidth=2, markersize=7)
-        for k, p, lbl in zip(our_kbps, our_pesq, bit_labels):
+        for (k, p, lbl, off) in zip(our_kbps, our_pesq, bit_labels, offsets):
             if not math.isnan(p):
                 ax1.annotate(lbl, (k, p), textcoords='offset points',
-                             xytext=(4, 4), fontsize=8, color='steelblue')
+                             xytext=off, fontsize=8, color='steelblue')
         ax1.plot(enc_kbps, enc_pesq, 's--', color='darkorange',
                  label='EnCodec (RVQ)', linewidth=2, markersize=7)
         ax1.set_xlabel('Effective bitrate (kbps)')
@@ -299,10 +316,10 @@ def _plot(sweep_summary, out_dir):
     valid_s   = [s for s in our_stoi if not math.isnan(s)]
     ax2.plot(valid_k_s, valid_s, 'o-', color='steelblue',
              label='Ours (scalar)', linewidth=2, markersize=7)
-    for k, s, lbl in zip(our_kbps, our_stoi, bit_labels):
+    for (k, s, lbl, off) in zip(our_kbps, our_stoi, bit_labels, offsets):
         if not math.isnan(s):
             ax2.annotate(lbl, (k, s), textcoords='offset points',
-                         xytext=(4, 4), fontsize=8, color='steelblue')
+                         xytext=off, fontsize=8, color='steelblue')
     ax2.plot(enc_kbps, enc_stoi, 's--', color='darkorange',
              label='EnCodec (RVQ)', linewidth=2, markersize=7)
     ax2.set_xlabel('Effective bitrate (kbps)')
