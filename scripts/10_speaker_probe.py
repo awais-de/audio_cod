@@ -81,7 +81,10 @@ def main():
         files = speaker_files[spk][:MAX_CLIPS_PER_SPEAKER]
         n_ok  = 0
         for fpath in files:
-            audio, fsr = sf.read(fpath)
+            try:
+                audio, fsr = sf.read(fpath)
+            except Exception:
+                continue
             if audio.ndim > 1:
                 audio = audio.mean(axis=1)
             if fsr != SR:
@@ -124,8 +127,7 @@ def main():
     try:
         from sklearn.linear_model import LogisticRegression
         from sklearn.metrics import accuracy_score, confusion_matrix
-        clf = LogisticRegression(max_iter=1000, C=1.0, solver='lbfgs',
-                                 multi_class='multinomial')
+        clf = LogisticRegression(max_iter=1000, C=1.0, solver='lbfgs')
         clf.fit(X_train, y_train)
         y_pred   = clf.predict(X_test)
         acc      = accuracy_score(y_test, y_pred) * 100

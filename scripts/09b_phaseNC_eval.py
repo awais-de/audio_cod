@@ -104,8 +104,12 @@ def main():
             'kbps_nc': kbps_nc, 'pesq_nc': pesq_nc, 'stoi_nc': stoi_nc,
         })
         print(f"[{idx}/{N_SPEAKERS}] {spk}")
-        print(f"  Phase G  : {kbps_g:.2f} kbps  pesq={pesq_g or 'n/a':.3f}  stoi={stoi_g or 'n/a':.3f}")
-        print(f"  Phase NC : {kbps_nc:.2f} kbps  pesq={pesq_nc or 'n/a':.3f}  stoi={stoi_nc or 'n/a':.3f}")
+        p_g  = f"{pesq_g:.3f}"  if pesq_g  is not None else "n/a"
+        p_nc = f"{pesq_nc:.3f}" if pesq_nc is not None else "n/a"
+        s_g  = f"{stoi_g:.3f}"  if stoi_g  is not None else "n/a"
+        s_nc = f"{stoi_nc:.3f}" if stoi_nc is not None else "n/a"
+        print(f"  Phase G  : {kbps_g:.2f} kbps  pesq={p_g}  stoi={s_g}")
+        print(f"  Phase NC : {kbps_nc:.2f} kbps  pesq={p_nc}  stoi={s_nc}")
 
     # Summary
     SEP = '=' * 68
