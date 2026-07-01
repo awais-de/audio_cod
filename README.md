@@ -55,12 +55,12 @@ Evaluated on LibriSpeech test-clean (5 speakers, 5-second clips, 16 kHz mono).
 | Ours — Phase C | 5.7 kbps | 1.202 | 0.733 |
 | Ours — Phase G (default) | 5.9 kbps | 1.279 | 0.766 |
 
-Phase G is the best-performing checkpoint across all phases. The quality gap versus EnCodec at matched bitrate reflects the fundamental difference in quantization scheme: 3-bit uniform scalar quantization versus residual vector quantization. The training progression from Phase C to Phase G yields a consistent improvement (+0.077 PESQ, +0.033 STOI) through combined spectral losses and fine-polish training.
+Phase G is the best-performing checkpoint across all phases. The training progression from Phase C to Phase G yields a consistent +0.077 PESQ and +0.033 STOI improvement through combined spectral losses and fine-polish training. The gap versus EnCodec at matched bitrate is explained by latent entropy structure — a rate-distortion sweep (1-bit through 6-bit) confirms quality plateaus from 4-bit onward regardless of added bits, with the ceiling set by the training objective rather than quantization resolution.
 
 To reproduce this table:
 
 ```bash
-python scripts/03b_phaseC_eval.py
+python scripts/08b_phaseG_eval.py
 ```
 
 > **Note on PESQ:** the `pesq` package compiles a C extension at install time and requires platform build tools:
