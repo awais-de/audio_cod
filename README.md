@@ -44,9 +44,6 @@ metrics.json         bitrate, PESQ-WB, STOI, SNR, run metadata
 
 ## Results
 
-Evaluated on LibriSpeech test-clean (5 speakers, 5-second clips, 16 kHz mono).  
-Phase C checkpoint — 3-bit uniform quantization + zlib entropy coding.
-
 Evaluated on LibriSpeech test-clean (5 speakers, 5-second clips, 16 kHz mono).
 
 | Codec | Bitrate | PESQ-WB | STOI |
@@ -101,7 +98,7 @@ Waveform (16 kHz)
 | Minimum streaming block | 100 ms |
 | Quantization | 3-bit uniform (8 levels) + zlib |
 | Sample rate | 16 kHz mono |
-| Typical bitrate (Phase G) | ~6.5 kbps |
+| Typical bitrate (Phase G) | ~5.9 kbps |
 
 ---
 
