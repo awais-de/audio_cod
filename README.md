@@ -223,6 +223,7 @@ audio_cod/
 │   ├── infer_offline.py            Offline inference: encode → decode → metrics
 │   ├── encode.py                   Standalone encoder  (audio → .nacodec)
 │   ├── decode.py                   Standalone decoder  (.nacodec → audio)
+│   ├── inspect_nacodec.py          Inspect a .nacodec file (header, per-chunk stats, bitrate)
 │   ├── download_checkpoints.py     Download pre-trained weights from Google Drive
 │   ├── 01_phaseA_train.py
 │   ├── 02_phaseB_train.py
