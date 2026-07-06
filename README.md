@@ -47,7 +47,7 @@ Pass `--save 0` to discard `compressed.nacodec` after the run.
 
 ## Separate Encoder and Decoder
 
-`infer_offline.py` encodes and decodes in a single pass without saving the compressed bitstream to disk. To obtain the compressed file and decode it separately — as in a real transmit/receive scenario — use the two standalone scripts:
+`infer_offline.py` saves the compressed bitstream as `compressed.nacodec` alongside the other outputs by default (pass `--save 0` to discard it). To encode and decode as two fully separate steps — simulating a transmit/receive pipeline — use the standalone scripts:
 
 ```bash
 # Step 1 — encode: audio file → compressed binary
