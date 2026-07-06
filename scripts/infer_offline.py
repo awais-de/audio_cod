@@ -9,12 +9,16 @@ Usage:
 
 Each run writes to inference_runs/<timestamp>/:
   source.wav          resampled/normalised input (what was fed to the encoder)
+  compressed.nacodec  compressed bitstream (same format as encode.py output)
   reconstructed.wav   decoded output
   metrics.json        all quantitative results for this run
+
+Pass --save 0 to discard the compressed file after the run.
 """
 
 import sys
 import json
+import struct
 import zlib
 import argparse
 from datetime import datetime
@@ -42,7 +46,10 @@ try:
 except ImportError:
     STOI_OK = False
 
-NUM_LEVELS = 8
+NUM_LEVELS  = 8
+_MAGIC      = b'NACODEC1'
+_HEADER     = struct.Struct('!8sIIII')   # magic, sr, n_samples, chunk_samples, n_chunks
+_CHUNK_HDR  = struct.Struct('!ffB')      # z_min, z_max, n_dims
 
 
 def find_default_input() -> Path:
@@ -94,6 +101,7 @@ def run(args):
     # Encode → decode round-trip
     chunk_sz = int(args.chunk_sec * sr)
     recon_chunks = []
+    chunks_data = []   # (z_min, z_max, shape, comp) — for writing the bitstream file
     total_bits = 0
     n_skipped = 0
     latent_shape = None
@@ -117,6 +125,7 @@ def run(args):
             q = np.clip(np.round((z_np - z_min) / scale), 0, NUM_LEVELS - 1).astype(np.uint8)
             comp = zlib.compress(q.tobytes(), level=9)
             total_bits += len(comp) * 8
+            chunks_data.append((z_min, z_max, q.shape, comp))
 
             q_dec = np.frombuffer(zlib.decompress(comp), dtype=np.uint8).reshape(z_np.shape)
             z_rec = q_dec.astype(np.float32) * scale + z_min
@@ -125,6 +134,21 @@ def run(args):
 
     if not recon_chunks:
         raise RuntimeError("No chunks were processed — input may be too short.")
+
+    # Write compressed bitstream
+    bitstream_path = out_dir / 'compressed.nacodec'
+    with open(bitstream_path, 'wb') as f:
+        f.write(_HEADER.pack(_MAGIC, sr, n_samples, chunk_sz, len(chunks_data)))
+        for z_min, z_max, shape, comp in chunks_data:
+            f.write(_CHUNK_HDR.pack(z_min, z_max, len(shape)))
+            for d in shape:
+                f.write(struct.pack('!I', d))
+            f.write(struct.pack('!I', len(comp)))
+            f.write(comp)
+
+    if not args.save:
+        bitstream_path.unlink()
+        bitstream_path = None
 
     recon = np.concatenate(recon_chunks)
     if len(recon) >= n_samples:
@@ -175,6 +199,7 @@ def run(args):
         'pesq_wb': round(pesq_score, 4) if pesq_score is not None else None,
         'stoi': round(stoi_score, 4) if stoi_score is not None else None,
         'output_dir': str(out_dir),
+        'bitstream': str(bitstream_path) if bitstream_path else None,
     }
 
     with open(out_dir / 'metrics.json', 'w') as f:
@@ -198,6 +223,10 @@ def run(args):
         print(f"stoi:        {stoi_score:.3f}")
     else:
         print("stoi:        n/a  (pip install pystoi)")
+    if bitstream_path:
+        file_kb = bitstream_path.stat().st_size / 1024
+        orig_kb = n_samples * 2 / 1024
+        print(f"bitstream:   {bitstream_path.name}  ({file_kb:.1f} KB, {orig_kb / file_kb:.0f}× smaller than uncompressed PCM)")
     print(f"output:      {out_dir}/")
 
 
@@ -215,6 +244,8 @@ def main():
                         help='Target sample rate (default: 16000)')
     parser.add_argument('--device', type=str,
                         default='cuda' if torch.cuda.is_available() else 'cpu')
+    parser.add_argument('--save', type=int, default=1, choices=[0, 1],
+                        help='Save compressed bitstream to output dir (default: 1). Pass 0 to discard.')
     args = parser.parse_args()
     run(args)
 

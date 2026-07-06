@@ -36,9 +36,12 @@ Each run writes to `inference_runs/<timestamp>/`:
 
 ```
 source.wav           resampled input fed to the encoder
+compressed.nacodec   compressed bitstream (decodable with scripts/decode.py)
 reconstructed.wav    decoded output
 metrics.json         bitrate, PESQ-WB, STOI, SNR, run metadata
 ```
+
+Pass `--save 0` to discard `compressed.nacodec` after the run.
 
 ---
 
