@@ -42,6 +42,48 @@ metrics.json         bitrate, PESQ-WB, STOI, SNR, run metadata
 
 ---
 
+## Separate Encoder and Decoder
+
+`infer_offline.py` encodes and decodes in a single pass without saving the compressed bitstream to disk. To obtain the compressed file and decode it separately — as in a real transmit/receive scenario — use the two standalone scripts:
+
+```bash
+# Step 1 — encode: audio file → compressed binary
+python scripts/encode.py input.wav compressed.nacodec
+
+# Step 2 — decode: compressed binary → reconstructed audio (no original needed)
+python scripts/decode.py compressed.nacodec reconstructed.wav
+```
+
+The `.nacodec` file is the actual compressed bitstream: a 28-byte header (magic bytes, sample rate, chunk dimensions) followed by the 3-bit scalar-quantised, zlib-compressed latent frames. Everything needed to reconstruct the audio is contained in this file; the original `input.wav` is not required at decode time.
+
+Example output from the encoder:
+
+```
+checkpoint:  temporal_phaseG/best.pt  (phase=G, d_model=384, bottleneck=32)
+input:       input.wav  (5.00s @ 16000 Hz, 80000 samples)
+chunk   1/5  latent=(32, 100)  compressed=1181B
+chunk   2/5  latent=(32, 100)  compressed=1173B
+...
+bitrate:     5.87 kbps
+file_size:   3.7 KB  (157 KB uncompressed PCM, 42× reduction)
+output:      compressed.nacodec
+```
+
+Example output from the decoder:
+
+```
+checkpoint:  temporal_phaseG/best.pt  (phase=G, d_model=384, bottleneck=32)
+input:       compressed.nacodec  (5.00s @ 16000Hz, 5 chunks)
+chunk   1/5  latent=(32, 100)  1181B  → 16000 samples
+...
+bitrate:     5.87 kbps
+output:      reconstructed.wav
+```
+
+Both scripts accept `--checkpoint path/to/best.pt` to select a specific phase and `--device cpu` to run without a GPU.
+
+---
+
 ## Results
 
 Evaluated on LibriSpeech test-clean (5 speakers, 5-second clips, 16 kHz mono).
