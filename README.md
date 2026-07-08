@@ -1,6 +1,6 @@
 # Neural Audio Codec — Low-Bitrate Speech Compression
 
-A transformer-based neural audio codec targeting real-time speech communication at sub-10 kbps with under 100 ms algorithmic latency.
+A transformer-based neural audio codec targeting real-time speech communication at sub-10 kbps, streaming in causal, fixed-size chunks (1 second by default) for real-time use. See [Known Issues](#known-issues) for a note on the transformer's attention window and what actually governs latency.
 
 Developed at TU Ilmenau under the supervision of Prof. Gerald Schuller.
 
@@ -124,7 +124,7 @@ python scripts/08b_phaseG_eval.py
 ```
 Waveform (16 kHz)
   → CausalConv encoder   [3× stride-2  →  2000 Hz latent rate]
-  → Transformer          [6 layers, d=384, causal window=200 frames = 100 ms]
+  → Transformer          [6 layers, d=384, causal self-attention over the full chunk (~1,995 frames)]
   → Linear(384 → 32)    [spatial bottleneck: 12× dimension reduction]
   → Conv1d stride=20    [temporal bottleneck: 2000 Hz → 100 Hz]
   ─── 3-bit quantise + zlib ───   (theoretical cap: 32×3×100 = 9.6 kbps)
@@ -139,11 +139,21 @@ Waveform (16 kHz)
 
 | Property | Value |
 |---|---|
-| Algorithmic delay | 100 ms |
-| Minimum streaming block | 100 ms |
+| Streaming latency | Set by inference chunk size — 1 s default in `encode.py`, configurable |
+| Transformer attention | Causal, unrestricted over the full input chunk (see [Known Issues](#known-issues)) |
 | Quantization | 3-bit uniform (8 levels) + zlib |
 | Sample rate | 16 kHz mono |
 | Typical bitrate (Phase G) | ~5.9 kbps |
+
+---
+
+## Known Issues
+
+**Attention window — confirmed non-functional.** The transformer was designed with a 200-frame (100 ms) sliding attention window for low latency, as stated in the code's own docstring. Direct inspection of the trained model and source confirmed this was never enforced: the windowing mask was implemented as `torch.triu(diagonal=window_size+1)` (masking keys far *ahead* of the query — already excluded by the causal mask) instead of a `torch.tril` masking keys far *behind* the query, which is what limiting past lookback actually requires. Since a standard 1-second training chunk produces `seq_len ≈ 1,995` — roughly 10× the intended window — this bug was active for every training step, in every phase, from the start.
+
+The model was trained on, and relies on, **unrestricted causal attention across the full chunk**, not a 200-frame window. Per-layer attention measured at the real operating length (seq_len≈1,995) is close to uniform across each layer's visible history (avg. distance 441–511 frames, close to the theoretical uniform baseline T/4≈499) — not concentrated on recent frames.
+
+This does **not** invalidate any PESQ/STOI/entropy/bitrate result reported below — every metric measures the model's actual trained behavior either way, bug included. It does mean the "100 ms window" describes an architectural *intention*, not the trained model's real internal behavior. Deployable streaming latency is unaffected by this bug: it's governed by inference **chunk size**, set independently in `encode.py` (1-second default, configurable), not by the attention window internals.
 
 ---
 
