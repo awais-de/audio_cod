@@ -27,7 +27,10 @@ def load_all(project_root: Path) -> dict:
     _try(data, 'speaker_probe',_load_speaker_probe,   comp / '2026-07-01_speaker_probe' / 'report.txt')
     _try(data, 'corruption',   _load_corruption,      comp / '2026-07-01_corruption_test' / 'report.txt')
     _try(data, 'phase_ab',     _load_phase_ab,        comp / '2026-07-10_phaseAB_eval' / 'report.txt')
-    _try(data, 'music',        _load_metrics_csv,     comp / 'music_eval' / 'results.csv')
+    # eval_music.py saves to comparisons/<date>_music_eval/metrics.csv — find latest
+    music_dirs = sorted(comp.glob('*_music_eval'), reverse=True)
+    if music_dirs:
+        _try(data, 'music', _load_metrics_csv, music_dirs[0] / 'metrics.csv')
 
     return data
 
