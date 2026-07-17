@@ -387,7 +387,7 @@ def fig_10_dim_heatmap(data: dict) -> plt.Figure:
 
 def fig_11_attention(_data: dict) -> plt.Figure:
     raise DataNotAvailable(
-        'fig_11 requires running scripts/12_attention_stats.py against the Phase G checkpoint. '
+        'fig_20_attention_stats requires running scripts/12_attention_stats.py against the Phase G checkpoint. '
         'Run: python scripts/12_attention_stats.py --checkpoint checkpoints_active/temporal_phaseG/best.pt '
         '--output comparisons/attention_stats/report.txt'
     )
@@ -399,7 +399,7 @@ def fig_11_attention(_data: dict) -> plt.Figure:
 
 def fig_12_quant_gap(_data: dict) -> plt.Figure:
     raise DataNotAvailable(
-        'fig_12 requires float and 3-bit inference against Phase G. '
+        'fig_21_quant_gap requires float and 3-bit inference against Phase G. '
         'Run scripts/quantisation_gap.py first to produce comparisons/quant_gap/report.txt'
     )
 
@@ -410,7 +410,7 @@ def fig_12_quant_gap(_data: dict) -> plt.Figure:
 
 def fig_14_attn_heatmaps(_data: dict) -> plt.Figure:
     raise DataNotAvailable(
-        'fig_14 requires per-utterance attention weights. '
+        'fig_22_attn_heatmaps requires per-utterance attention weights. '
         'Run scripts/12_attention_stats.py with --save-heatmaps flag.'
     )
 

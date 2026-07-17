@@ -2,15 +2,18 @@
 """Regenerate all thesis figures from canonical comparison report files.
 
 Usage:
-  python scripts/generate_figures.py              # all figures
-  python scripts/generate_figures.py --fig fig_01 fig_18   # specific figures
-  python scripts/generate_figures.py --list       # list available figures
-  python scripts/generate_figures.py --dpi 150   # lower DPI for quick preview
+  python scripts/generate_figures.py                                  # all figures
+  python scripts/generate_figures.py --fig fig_02_phase_progression   # specific figures
+  python scripts/generate_figures.py --list                           # list available figures
+  python scripts/generate_figures.py --dpi 150                        # lower DPI for quick preview
 
 Output: plots/<fig_name>.png  (300 DPI by default, IEEE two-column sizing)
 
-Figures that require checkpoint-level inference (attention heatmaps, quantisation
-gap) are skipped automatically and print instructions for generating the data first.
+Figure numbering follows the paper's narrative order: the codec itself (1),
+headline curriculum result (2), comparison vs EnCodec — quality/complexity/
+delay (3-5), the entropy-mechanism cluster (6-12), OOD/generalization and
+robustness (13-17), speaker privacy (18), music (19), then figures that need
+checkpoint-level inference not yet run (20-22, auto-skipped).
 """
 import argparse
 import sys
@@ -28,33 +31,37 @@ from figures.plots import DataNotAvailable
 
 # ---------------------------------------------------------------------------
 # Figure registry — name → (function, description)
+#
+# Keys double as the output filename stem (plots/<key>.png) and the --fig
+# CLI argument, so the number and the descriptive slug both live in one
+# place. Renumbering the paper's figures means editing this dict only —
+# the underlying fig_XX_* function names in figures/plots.py are internal
+# and intentionally not tied to paper numbering.
 # ---------------------------------------------------------------------------
 
 FIGURES: dict[str, tuple] = {
-    'fig_01':  (plots.fig_01_phase_progression,  'Phase PESQ+STOI bar chart C→G  (n=40, 95% CI)'),
-    'fig_02':  (plots.fig_02_rd_curve,           'R-D curve: PESQ-WB + STOI vs bitrate, EntroCodec vs EnCodec'),
-    'fig_03':  (plots.fig_03_dim_entropy,        'Per-dimension entropy bar chart, Phase G'),
-    'fig_04':  (plots.fig_04_entropy_quality,    'Latent entropy vs PESQ/STOI scatter (cross-phase)'),
-    'fig_05':  (plots.fig_05_ood,                'OOD evaluation: bitrate + STOI by signal type'),
-    'fig_06':  (plots.fig_06_compression,        'zlib compression ratio + effective kbps per phase'),
-    'fig_07':  (plots.fig_07_causality,          'Causal (G) vs non-causal (NC) per speaker'),
-    'fig_08':  (plots.fig_08_speaker_probe,      'Speaker identity probe recall (sorted)'),
-    'fig_09':  (plots.fig_09_corruption,         'Bitstream corruption robustness'),
-    'fig_10':  (plots.fig_10_dim_heatmap,        '32×6 entropy heatmap: H(d) across phases'),
-    'fig_11':  (plots.fig_11_attention,          '[SKIP] Attention stats — requires checkpoint inference'),
-    'fig_12':  (plots.fig_12_quant_gap,          '[SKIP] Quantisation gap — requires float vs 3-bit inference'),
-    'fig_14':  (plots.fig_14_attn_heatmaps,      '[SKIP] Attention heatmaps — requires saved attention weights'),
-    'fig_15':  (plots.fig_15_dual_entropy,       'Dual entropy confirmation: H̄(d) vs zlib ratio  (r=−0.9965)'),
-    'fig_16':  (plots.fig_16_multi_coder,        'Multi-coder comparison: zlib + lzma + bz2'),
-    # MS Thesis additions
-    'fig_17':  (plots.fig_17_entropy_ablation,   '[NEW] Entropy penalty ablation: D vs D-VAE vs D-Entropy'),
-    'fig_18':  (plots.fig_18_channel_ablation,   '[NEW] Channel width ablation: 16 / 32 / 64 dims'),
-    'fig_19':  (plots.fig_19_music_eval,         '[NEW] Music evaluation SI-SDR  (requires music eval run)'),
-    # Paper deliverables coverage
-    'fig_20':  (plots.fig_20_architecture,       '[NEW] Codec architecture / streaming pipeline schematic'),
-    'fig_21':  (plots.fig_21_complexity,         '[NEW] Model complexity: params + MACs, EntroCodec vs EnCodec'),
-    'fig_22':  (plots.fig_22_latency,            '[NEW] End-to-end delay: algorithmic vs measured CPU latency'),
-    'fig_23':  (plots.fig_23_vctk_generalization,'[NEW] VCTK cross-corpus generalization (OOD validation)'),
+    'fig_01_architecture':            (plots.fig_20_architecture,       'Codec architecture / streaming pipeline schematic'),
+    'fig_02_phase_progression':       (plots.fig_01_phase_progression,  'Phase PESQ+STOI bar chart C→G  (n=40, 95% CI)'),
+    'fig_03_rd_curve':                (plots.fig_02_rd_curve,           'R-D curve: PESQ-WB + STOI vs bitrate, EntroCodec vs EnCodec'),
+    'fig_04_complexity':              (plots.fig_21_complexity,         'Model complexity: params + MACs, EntroCodec vs EnCodec'),
+    'fig_05_latency':                 (plots.fig_22_latency,            'End-to-end delay: algorithmic vs measured CPU latency'),
+    'fig_06_dim_entropy':             (plots.fig_03_dim_entropy,        'Per-dimension entropy bar chart, Phase G'),
+    'fig_07_entropy_heatmap':         (plots.fig_10_dim_heatmap,        '32×6 entropy heatmap: H(d) across phases'),
+    'fig_08_entropy_quality_scatter': (plots.fig_04_entropy_quality,    'Latent entropy vs PESQ/STOI scatter (cross-phase)'),
+    'fig_09_dual_entropy':            (plots.fig_15_dual_entropy,       'Dual entropy confirmation: H̄(d) vs zlib ratio  (r=−0.9965)'),
+    'fig_10_multi_coder':             (plots.fig_16_multi_coder,        'Multi-coder comparison: zlib + lzma + bz2'),
+    'fig_11_entropy_ablation':        (plots.fig_17_entropy_ablation,   'Entropy penalty ablation: D vs D-VAE vs D-Entropy'),
+    'fig_12_channel_ablation':        (plots.fig_18_channel_ablation,   'Channel width ablation: 16 / 32 / 64 dims'),
+    'fig_13_compression':             (plots.fig_06_compression,        'zlib compression ratio + effective kbps per phase'),
+    'fig_14_ood_signals':             (plots.fig_05_ood,                'OOD evaluation: bitrate + STOI by signal type'),
+    'fig_15_vctk_generalization':     (plots.fig_23_vctk_generalization,'VCTK cross-corpus generalization (OOD validation)'),
+    'fig_16_causality':               (plots.fig_07_causality,          'Causal (G) vs non-causal (NC) per speaker'),
+    'fig_17_corruption':              (plots.fig_09_corruption,         'Bitstream corruption robustness'),
+    'fig_18_speaker_probe':           (plots.fig_08_speaker_probe,      'Speaker identity probe recall (sorted)'),
+    'fig_19_music_eval':              (plots.fig_19_music_eval,         'Music evaluation SI-SDR  (requires music eval run)'),
+    'fig_20_attention_stats':         (plots.fig_11_attention,          '[SKIP] Attention stats — requires checkpoint inference'),
+    'fig_21_quant_gap':               (plots.fig_12_quant_gap,          '[SKIP] Quantisation gap — requires float vs 3-bit inference'),
+    'fig_22_attn_heatmaps':           (plots.fig_14_attn_heatmaps,      '[SKIP] Attention heatmaps — requires saved attention weights'),
 }
 
 
@@ -62,7 +69,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--fig', nargs='+', metavar='NAME',
-                        help='Figures to generate (default: all). E.g. --fig fig_01 fig_18')
+                        help='Figures to generate (default: all). '
+                             'E.g. --fig fig_02_phase_progression fig_12_channel_ablation')
     parser.add_argument('--out', type=Path,
                         default=PROJECT_ROOT / 'plots',
                         help='Output directory (default: plots/)')
@@ -74,8 +82,9 @@ def main() -> None:
 
     if args.list:
         print('\nAvailable figures:\n')
+        width = max(len(n) for n in FIGURES) + 2
         for name, (_, desc) in FIGURES.items():
-            print(f'  {name:<10} {desc}')
+            print(f'  {name:<{width}} {desc}')
         print()
         return
 
