@@ -26,7 +26,6 @@ def load_all(project_root: Path) -> dict:
     _try(data, 'ood',          _load_ood,             comp / '2026-07-01_ood_eval' / 'report.txt')
     _try(data, 'speaker_probe',_load_speaker_probe,   comp / '2026-07-01_speaker_probe' / 'report.txt')
     _try(data, 'corruption',   _load_corruption,      comp / '2026-07-01_corruption_test' / 'report.txt')
-    _try(data, 'phase_ab',     _load_phase_ab,        comp / '2026-07-10_phaseAB_eval' / 'report.txt')
     # eval_music.py saves to comparisons/<date>_music_eval/metrics.csv — find latest
     music_dirs = sorted(comp.glob('*_music_eval'), reverse=True)
     if music_dirs:
@@ -264,22 +263,3 @@ def _load_corruption(path: Path):
         if m:
             rows.append(dict(rate=float(m.group(1)), success=float(m.group(2))))
     return rows
-
-
-# ---- Phase A/B (STOI only, no PESQ on Linux) ------------------------------
-
-_RE_AB_ROW = re.compile(r'^\s+Phase ([AB])\s+([\d.]+)k\s+(\S+)\s+([\d.]+)')
-
-
-def _load_phase_ab(path: Path):
-    result: dict = {}
-    for line in path.read_text(encoding='utf-8').splitlines():
-        m = _RE_AB_ROW.match(line)
-        if m:
-            phase, kbps, pesq_raw, stoi = m.groups()
-            result[phase] = dict(
-                kbps=float(kbps),
-                pesq=None if pesq_raw == 'n/a' else float(pesq_raw),
-                stoi=float(stoi),
-            )
-    return result

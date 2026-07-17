@@ -32,7 +32,6 @@ from figures.plots import DataNotAvailable
 
 FIGURES: dict[str, tuple] = {
     'fig_01':  (plots.fig_01_phase_progression,  'Phase PESQ+STOI bar chart C→G  (n=40, 95% CI)'),
-    'fig_01b': (plots.fig_01b_stoi_all_phases,   'STOI all phases A→G  (A/B hatched: PESQ unavailable)'),
     'fig_02':  (plots.fig_02_rd_curve,           'R-D curve: PESQ-WB + STOI vs bitrate, ours vs EnCodec'),
     'fig_03':  (plots.fig_03_dim_entropy,        'Per-dimension entropy bar chart, Phase G'),
     'fig_04':  (plots.fig_04_entropy_quality,    'Latent entropy vs PESQ/STOI scatter (cross-phase)'),
@@ -80,7 +79,7 @@ def main() -> None:
     print(f'\nLoading comparison data from {PROJECT_ROOT / "comparisons"}/ ...')
     data = load_all(PROJECT_ROOT)
     loaded = [k for k in ('metrics', 'ci', 'compression', 'rd', 'multi_coder',
-                           'ood', 'speaker_probe', 'corruption', 'phase_ab', 'music')
+                           'ood', 'speaker_probe', 'corruption', 'music')
               if k in data]
     print(f'  Loaded: {", ".join(loaded)}\n')
 

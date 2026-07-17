@@ -68,48 +68,6 @@ def fig_01_phase_progression(data: dict) -> plt.Figure:
 
 
 # ---------------------------------------------------------------------------
-# fig_01b — STOI all phases A→G (A/B hatched: PESQ unavailable)
-# ---------------------------------------------------------------------------
-
-def fig_01b_stoi_all_phases(data: dict) -> plt.Figure:
-    ci = data.get('ci', {})
-    ab = data.get('phase_ab', {})
-
-    phase_order = ['A', 'B', 'C', 'D', 'D-VAE', 'E', 'F', 'G']
-    stoi_vals, hatches = [], []
-    for p in phase_order:
-        if p in ab:
-            stoi_vals.append(ab[p]['stoi'])
-            hatches.append('//')
-        elif p in ci:
-            stoi_vals.append(ci[p]['stoi'])
-            hatches.append('')
-        else:
-            stoi_vals.append(None)
-            hatches.append('')
-
-    fig, ax = plt.subplots(figsize=(style.COL2_W, style.ROW_H))
-    x = np.arange(len(phase_order))
-    w = 0.6
-    for i, (p, v, h) in enumerate(zip(phase_order, stoi_vals, hatches)):
-        if v is None:
-            continue
-        color = style.PHASE_COLORS.get(p, '#888888')
-        ax.bar(i, v, w, color=color, hatch=h, edgecolor='white', linewidth=0.5)
-        ax.text(i, v + 0.005, f'{v:.3f}', ha='center', va='bottom', fontsize=6.5)
-
-    ab_patch = mpatches.Patch(facecolor='#999', hatch='//', label='A/B: STOI only (PESQ unavailable)')
-    style.legend(fig, handles=[ab_patch], labels=[ab_patch.get_label()])
-    ax.set_xticks(x)
-    ax.set_xticklabels(phase_order)
-    ax.set_ylabel('STOI')
-    ax.set_ylim(0.48, 0.86)
-    ax.grid(True, axis='y')
-    ax.set_title('STOI across all phases  (A/B: 5-speaker; C–G: n=40)', fontsize=9)
-    return fig
-
-
-# ---------------------------------------------------------------------------
 # fig_02 — R-D curve: PESQ-WB and STOI vs bitrate, ours vs EnCodec
 # ---------------------------------------------------------------------------
 
