@@ -183,7 +183,10 @@ def fig_03_dim_entropy(data: dict) -> plt.Figure:
     ax.set_ylabel('Shannon entropy (bits)')
     ax.set_title('Per-dimension entropy — Phase G', fontsize=9)
     ax.set_xlim(-0.5, len(vals) - 0.5)
-    ax.set_ylim(0.8, 2.2)
+    # Scaled to include the 3.0-bit (uniform) reference line rather than
+    # cropping it out — the whole point of that line is to show how far
+    # these dims sit from the theoretical max.
+    ax.set_ylim(0.8, 3.15)
     style.legend(fig, ax=ax)
     ax.grid(True, axis='y')
     return fig
@@ -469,7 +472,6 @@ def fig_15_dual_entropy(data: dict) -> plt.Figure:
     for p, h, r in zip(phases, entropy, ratio):
         ax.scatter(h, r, color=style.PHASE_COLORS[p], s=60, zorder=5,
                    edgecolors='white', linewidths=0.5)
-        ax.annotate(p, (h, r), textcoords='offset points', xytext=(4, 2), fontsize=6)
     ax.set_xlabel('Mean H(d) per dimension (bits)')
     ax.set_ylabel('zlib compression ratio')
     ax.grid(True)
@@ -478,6 +480,14 @@ def fig_15_dual_entropy(data: dict) -> plt.Figure:
     ax.text(0.97, 0.97, f'r = {r_val:.4f}', transform=ax.transAxes,
             fontsize=7, ha='right', va='top')
     ax.set_title('Dual entropy confirmation: H̄(d) vs zlib ratio', fontsize=9)
+
+    # Phase labels used to sit next to each point — C/D and E/F/G cluster
+    # tightly together in H(d), so the text overlapped. A shared legend
+    # below avoids that regardless of how tight the cluster is.
+    legend_handles = [Line2D([0], [0], marker='o', linestyle='none', markersize=6,
+                              markerfacecolor=style.PHASE_COLORS[p], markeredgecolor='white',
+                              label=p) for p in phases]
+    style.legend(fig, handles=legend_handles, labels=phases, ncol=len(phases))
     return fig
 
 
@@ -502,6 +512,16 @@ def fig_16_multi_coder(data: dict) -> plt.Figure:
     ax.bar(x - w,   zlib, w, color=c1, label='zlib',  edgecolor='white', linewidth=0.4)
     ax.bar(x,       lzma, w, color=c2, label='lzma',  edgecolor='white', linewidth=0.4)
     ax.bar(x + w,   bz2,  w, color=c3, label='bz2',   edgecolor='white', linewidth=0.4)
+    # zlib is the baseline used everywhere else in this analysis (fig_06,
+    # fig_15) — a thin red line from its bar top to bz2's marks the gain the
+    # stronger coders offer over that baseline, per phase.
+    dvae_idx = phases.index('D-VAE') if 'D-VAE' in phases else None
+    for xi, (z, b) in enumerate(zip(zlib, bz2)):
+        ax.plot([xi - w, xi + w], [z, b], color='#c0392b', linewidth=1.0, zorder=6)
+        if xi == dvae_idx:
+            ax.annotate(f'+{b - z:.3f}×  vs zlib', xy=(xi, (z + b) / 2),
+                        textcoords='offset points', xytext=(10, 0),
+                        fontsize=6.5, color='#c0392b', va='center')
     ax.set_xticks(x)
     ax.set_xticklabels(phases)
     ax.set_ylabel('Compression ratio')
@@ -527,7 +547,7 @@ def fig_17_entropy_ablation(data: dict) -> plt.Figure:
     }
 
     fig, axes = plt.subplots(1, 3, figsize=(style.COL2_W, style.ROW_H),
-                              gridspec_kw={'wspace': 0.45})
+                              gridspec_kw={'wspace': 0.32})
     for ax, metric, label in [
         (axes[0], 'pesq', 'PESQ-WB'),
         (axes[1], 'stoi', 'STOI'),
@@ -549,13 +569,16 @@ def fig_17_entropy_ablation(data: dict) -> plt.Figure:
                     f'{v:.3f}' if metric != 'kbps' else f'{v:.2f}',
                     ha='center', va='bottom', fontsize=6.5)
         ax.set_xticks(range(len(phases)))
-        ax.set_xticklabels(phases, fontsize=7)
+        # "D-VAE" and "D-Entropy" are wide enough at this bar spacing to run
+        # into each other unrotated ("D-VAED-Entropy") — angle them instead.
+        ax.set_xticklabels(phases, fontsize=7, rotation=20, ha='right')
         ax.set_ylabel(label)
         ax.set_ylim(lo, hi)
         ax.grid(True, axis='y')
 
-    fig.suptitle('Entropy penalty ablation: KL (D-VAE) vs soft entropy (D-Entropy) vs base (D)\n'
-                 '(n=40, 95% CI; both vs D: p<0.0001***)', fontsize=8.5)
+    fig.suptitle('Penalizing latent entropy trades quality for bitrate\n'
+                 '(D: no penalty · D-VAE: KL penalty · D-Entropy: soft-entropy penalty; '
+                 'both vs D: p<0.0001***, n=40)', fontsize=8.5)
     return fig
 
 
@@ -588,15 +611,25 @@ def fig_18_channel_ablation(data: dict) -> plt.Figure:
             offset = offsets[width_label]
             ax.bar(x + offset, vals, w, color=color, edgecolor='white',
                    linewidth=0.4, label=width_label, alpha=0.85)
+        # 32-dim is the baseline used throughout the rest of the thesis — a
+        # short reference line per phase makes 16/64-dim read as gain/loss
+        # against it, rather than three independent bars.
+        baseline_vals = [ci[p][metric] for p in widths['32-dim'][0]]
+        for xi, bv in zip(x, baseline_vals):
+            ax.plot([xi - 1.5 * w, xi + 1.5 * w], [bv, bv],
+                    color='#c0392b', linewidth=0.9, linestyle='--', zorder=6)
         ax.set_xticks(x)
         ax.set_xticklabels(stage_labels)
         ax.set_xlabel('Curriculum phase')
         ax.set_ylabel(ylabel)
         ax.grid(True, axis='y')
 
-    style.legend(fig, ax=axes[0], ncol=3)
+    legend_handles, legend_labels = axes[0].get_legend_handles_labels()
+    baseline_proxy = Line2D([0], [0], color='#c0392b', linestyle='--', linewidth=0.9)
+    style.legend(fig, handles=legend_handles + [baseline_proxy],
+                 labels=legend_labels + ['32-dim (baseline)'], ncol=4)
 
-    fig.suptitle('Channel width ablation: 16 / 32 / 64 bottleneck dimensions\n'
+    fig.suptitle('Bottleneck width vs quality, relative to the 32-dim baseline\n'
                  '(G-16 vs G: p<0.0001***;  G-64 vs G: p=0.006**;  n=40)',
                  fontsize=8.5)
     return fig
@@ -627,14 +660,17 @@ def fig_19_music_eval(data: dict) -> plt.Figure:
     # Left: SI-SDR mean per phase (variance is track-difficulty-dominated, not shown)
     bars1 = ax1.bar(x, si_sdr.values, w, color=colors, edgecolor='white', linewidth=0.5)
     for bar, v in zip(bars1, si_sdr.values):
-        ax1.text(bar.get_x() + bar.get_width() / 2, v - 0.12,
-                 f'{v:.2f}', ha='center', va='top', fontsize=6.5, color='white')
+        # Just past the bar tip, dark text — matches how the ratio panel
+        # labels its bars, instead of pale text sitting inside the bar.
+        ax1.text(bar.get_x() + bar.get_width() / 2, v - 0.15,
+                 f'{v:.2f}', ha='center', va='top', fontsize=6.5, color='#333')
     ax1.set_xticks(x); ax1.set_xticklabels(phase_order)
     ax1.set_ylabel('SI-SDR (dB)')
     ax1.set_ylim(-9.5, 0.5)
     ax1.grid(True, axis='y')
-    ax1.text(0.97, 0.97, 'higher = better', transform=ax1.transAxes,
-             fontsize=6, color='#555', va='top', ha='right')
+    # Bottom-left: C's bar is the shortest, leaving that corner clear.
+    ax1.text(0.03, 0.03, 'higher = better', transform=ax1.transAxes,
+             fontsize=6, color='#555', va='bottom', ha='left')
 
     # Right: zlib compression ratio
     bars2 = ax2.bar(x, ratio.values, w, color=colors, edgecolor='white', linewidth=0.5)
@@ -645,8 +681,10 @@ def fig_19_music_eval(data: dict) -> plt.Figure:
     ax2.set_ylabel('zlib compression ratio')
     ax2.set_ylim(1.0, 1.6)
     ax2.grid(True, axis='y')
-    ax2.text(0.97, 0.04, 'higher = more compressed', transform=ax2.transAxes,
-             fontsize=6, color='#555', va='bottom', ha='right')
+    # Top-right: G's bar is the shortest here, leaving that corner clear
+    # (bottom-right used to sit on every bar's base, since they all start at 1.0).
+    ax2.text(0.97, 0.97, 'higher = more compressed', transform=ax2.transAxes,
+             fontsize=6, color='#555', va='top', ha='right')
 
     fig.suptitle('Music eval — MUSDB18-HQ test set, n=40 tracks\n'
                  'D-VAE: highest compression + lowest quality  (p<0.0001***)',
