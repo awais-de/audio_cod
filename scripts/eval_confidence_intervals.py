@@ -48,7 +48,7 @@ except ImportError:
 
 # All phases evaluated — checkpoints must exist under checkpoints_active/
 PHASES = [
-    # Original curriculum (20 CP project)
+    # Original curriculum — 32-dim (20 CP project)
     ('C',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseC/best.pt'),
     ('D',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseD/best.pt'),
     ('D-VAE',     PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae/best.pt'),
@@ -56,11 +56,20 @@ PHASES = [
     ('F',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseF/best.pt'),
     ('G',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseG/best.pt'),
     ('NC',        PROJECT_ROOT / 'checkpoints_active/temporal_phaseNC/best.pt'),
-    # MS Thesis — second causal mechanism
+    # MS Thesis — second causal mechanism (32-dim)
     ('D-Entropy', PROJECT_ROOT / 'checkpoints_active/temporal_phaseEntropy/best.pt'),
-    # MS Thesis — channel width ablation
-    ('G-16dim',   PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_16/best.pt'),
-    ('G-64dim',   PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_64/best.pt'),
+    # MS Thesis — channel width ablation: 16-dim full progression
+    ('C-16',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseC_16/best.pt'),
+    ('D-16',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_16/best.pt'),
+    ('E-16',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseE_16/best.pt'),
+    ('F-16',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseF_16/best.pt'),
+    ('G-16',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_16/best.pt'),
+    # MS Thesis — channel width ablation: 64-dim full progression
+    ('C-64',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseC_64/best.pt'),
+    ('D-64',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_64/best.pt'),
+    ('E-64',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseE_64/best.pt'),
+    ('F-64',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseF_64/best.pt'),
+    ('G-64',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_64/best.pt'),
 ]
 
 # Contrasts for Wilcoxon signed-rank tests.
@@ -68,12 +77,15 @@ PHASES = [
 CONTRASTS = [
     # 20 CP project
     ('G vs NC',        'G',         'NC',      'causal vs non-causal (smaller G = causality costs quality)'),
-    ('D-VAE vs D',     'D-VAE',     'D',       'entropy-suppressed vs base (smaller D-VAE = KL hurts quality)'),
+    ('D-VAE vs D',     'D-VAE',     'D',       'KL penalty suppresses entropy → quality drops'),
     # MS Thesis: second causal mechanism
-    ('D-Entr vs D',    'D-Entropy', 'D',       'soft entropy penalty vs base (independent mechanism check)'),
-    # MS Thesis: channel width ablation
-    ('G-16 vs G',      'G-16dim',   'G',       'narrower bottleneck vs standard (coupling holds at 16-dim?)'),
-    ('G-64 vs G',      'G-64dim',   'G',       'wider bottleneck vs standard (coupling holds at 64-dim?)'),
+    ('D-Entr vs D',    'D-Entropy', 'D',       'soft entropy penalty vs base (independent mechanism)'),
+    # MS Thesis: channel width — endpoint comparison
+    ('G-16 vs G',      'G-16',      'G',       'narrower bottleneck vs 32-dim at best checkpoint'),
+    ('G-64 vs G',      'G-64',      'G',       'wider bottleneck vs 32-dim at best checkpoint'),
+    # MS Thesis: channel width — within-width progression (base vs best)
+    ('G-16 vs C-16',   'G-16',      'C-16',    '16-dim: full curriculum gain (same pattern as 32-dim?)'),
+    ('G-64 vs C-64',   'G-64',      'C-64',    '64-dim: full curriculum gain (same pattern as 32-dim?)'),
 ]
 
 
