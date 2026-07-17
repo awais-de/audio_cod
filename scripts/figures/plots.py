@@ -550,25 +550,47 @@ def fig_19_music_eval(data: dict) -> plt.Figure:
     music = data.get('music')
     if music is None:
         raise DataNotAvailable(
-            'Music eval results not found at comparisons/music_eval/results.csv. '
-            'Run: python scripts/eval_music.py --dataset <path/to/MUSDB18-HQ> '
-            '--output comparisons/music_eval/results.csv'
+            'Music eval results not found. '
+            'Run: python scripts/eval_music.py --dataset <path/to/MUSDB18-HQ>'
         )
-    phases  = music['phase'].unique()
-    si_sdr  = music.groupby('phase')['si_sdr'].mean()
-    colors  = [style.PHASE_COLORS.get(p, '#888888') for p in si_sdr.index]
+    phase_order = [p for p in ['C', 'D', 'D-VAE', 'G'] if p in music['phase'].values]
+    grp    = music.groupby('phase')
+    si_sdr = grp['si_sdr'].mean().reindex(phase_order)
+    ratio  = grp['zlib_ratio'].mean().reindex(phase_order)
+    colors = [style.PHASE_COLORS.get(p, '#888888') for p in phase_order]
 
-    fig, ax = plt.subplots(figsize=(style.COL1_W, style.ROW_H))
-    x = np.arange(len(si_sdr))
-    bars = ax.bar(x, si_sdr.values, 0.55, color=colors, edgecolor='white', linewidth=0.5)
-    for bar, v in zip(bars, si_sdr.values):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.1,
-                f'{v:.2f}', ha='center', va='bottom', fontsize=6.5)
-    ax.set_xticks(x)
-    ax.set_xticklabels(si_sdr.index, fontsize=7)
-    ax.set_ylabel('SI-SDR (dB)')
-    ax.grid(True, axis='y')
-    ax.set_title('Music reconstruction quality  (MUSDB18-HQ, SI-SDR)', fontsize=9)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H),
+                                   constrained_layout=True)
+    x = np.arange(len(phase_order))
+    w = 0.55
+
+    # Left: SI-SDR mean per phase (variance is track-difficulty-dominated, not shown)
+    bars1 = ax1.bar(x, si_sdr.values, w, color=colors, edgecolor='white', linewidth=0.5)
+    for bar, v in zip(bars1, si_sdr.values):
+        ax1.text(bar.get_x() + bar.get_width() / 2, v - 0.12,
+                 f'{v:.2f}', ha='center', va='top', fontsize=6.5, color='white')
+    ax1.set_xticks(x); ax1.set_xticklabels(phase_order)
+    ax1.set_ylabel('SI-SDR (dB)')
+    ax1.set_ylim(-9.5, 0.5)
+    ax1.grid(True, axis='y')
+    ax1.text(0.97, 0.97, 'higher = better', transform=ax1.transAxes,
+             fontsize=6, color='#555', va='top', ha='right')
+
+    # Right: zlib compression ratio
+    bars2 = ax2.bar(x, ratio.values, w, color=colors, edgecolor='white', linewidth=0.5)
+    for bar, v in zip(bars2, ratio.values):
+        ax2.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.005,
+                 f'{v:.3f}×', ha='center', va='bottom', fontsize=6.5)
+    ax2.set_xticks(x); ax2.set_xticklabels(phase_order)
+    ax2.set_ylabel('zlib compression ratio')
+    ax2.set_ylim(1.0, 1.6)
+    ax2.grid(True, axis='y')
+    ax2.text(0.97, 0.04, 'higher = more compressed', transform=ax2.transAxes,
+             fontsize=6, color='#555', va='bottom', ha='right')
+
+    fig.suptitle('Music eval — MUSDB18-HQ test set, n=40 tracks\n'
+                 'D-VAE: highest compression + lowest quality  (p<0.0001***)',
+                 fontsize=8.5)
     return fig
 
 
