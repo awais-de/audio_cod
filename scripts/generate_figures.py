@@ -50,6 +50,11 @@ FIGURES: dict[str, tuple] = {
     'fig_17':  (plots.fig_17_entropy_ablation,   '[NEW] Entropy penalty ablation: D vs D-VAE vs D-Entropy'),
     'fig_18':  (plots.fig_18_channel_ablation,   '[NEW] Channel width ablation: 16 / 32 / 64 dims'),
     'fig_19':  (plots.fig_19_music_eval,         '[NEW] Music evaluation SI-SDR  (requires music eval run)'),
+    # Paper deliverables coverage
+    'fig_20':  (plots.fig_20_architecture,       '[NEW] Codec architecture / streaming pipeline schematic'),
+    'fig_21':  (plots.fig_21_complexity,         '[NEW] Model complexity: params + MACs, EntroCodec vs EnCodec'),
+    'fig_22':  (plots.fig_22_latency,            '[NEW] End-to-end delay: algorithmic vs measured CPU latency'),
+    'fig_23':  (plots.fig_23_vctk_generalization,'[NEW] VCTK cross-corpus generalization (OOD validation)'),
 }
 
 
@@ -79,7 +84,7 @@ def main() -> None:
     print(f'\nLoading comparison data from {PROJECT_ROOT / "comparisons"}/ ...')
     data = load_all(PROJECT_ROOT)
     loaded = [k for k in ('metrics', 'ci', 'compression', 'rd', 'multi_coder',
-                           'ood', 'speaker_probe', 'corruption', 'music')
+                           'ood', 'speaker_probe', 'corruption', 'complexity', 'vctk', 'music')
               if k in data]
     print(f'  Loaded: {", ".join(loaded)}\n')
 

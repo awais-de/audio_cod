@@ -26,6 +26,8 @@ def load_all(project_root: Path) -> dict:
     _try(data, 'ood',          _load_ood,             comp / '2026-07-01_ood_eval' / 'report.txt')
     _try(data, 'speaker_probe',_load_speaker_probe,   comp / '2026-07-01_speaker_probe' / 'report.txt')
     _try(data, 'corruption',   _load_corruption,      comp / '2026-07-01_corruption_test' / 'report.txt')
+    _try(data, 'complexity',   _load_complexity,      comp / '2026-07-18_complexity_latency' / 'report.txt')
+    _try(data, 'vctk',         _load_second_dataset,  comp / '2026-07-10_second_dataset' / 'report.txt')
     # eval_music.py saves to comparisons/<date>_music_eval/metrics.csv — find latest
     music_dirs = sorted(comp.glob('*_music_eval'), reverse=True)
     if music_dirs:
@@ -263,3 +265,92 @@ def _load_corruption(path: Path):
         if m:
             rows.append(dict(rate=float(m.group(1)), success=float(m.group(2))))
     return rows
+
+
+# ---- Complexity / latency --------------------------------------------------
+
+def _load_complexity(path: Path):
+    text = path.read_text(encoding='utf-8')
+    num = lambda s: float(s.replace(',', ''))
+
+    ours_block = re.search(r'=== Ours.*?===\n(.*?)\n\n=== EnCodec', text, re.S).group(1)
+    enc_block = re.search(r'=== EnCodec.*?===\n(.*?)\n\nTotal params', text, re.S).group(1)
+
+    def parse_block(block):
+        d = {}
+        d['params'] = num(re.search(r'total\s+([\d,]+)', block).group(1))
+        d['macs'] = num(re.search(r'MACs \(1s clip, full fwd\)\s+([\d,]+)', block).group(1))
+        d['encode_ms'] = float(re.search(r'encode latency \(CPU\)\s+([\d.]+)\s*ms', block).group(1))
+        d['decode_ms'] = float(re.search(r'decode latency \(CPU\)\s+([\d.]+)\s*ms', block).group(1))
+        return d
+
+    ours, encodec = parse_block(ours_block), parse_block(enc_block)
+    ours['delay_ms'] = float(re.search(r'algorithmic delay.*?=\s*([\d.]+)\s*ms', text).group(1))
+    ours['chunk_ms'] = float(re.search(r'default chunking:\s*([\d.]+)\s*ms', text).group(1))
+    encodec['delay_ms'] = float(re.search(r'hop = ([\d.]+)\s*ms\)', text).group(1))
+
+    return dict(ours=ours, encodec=encodec)
+
+
+# ---- Second dataset (VCTK OOD generalization) ------------------------------
+
+_RE_VCTK_COMP_ROW = re.compile(
+    r'^\s+(\S+)\s+([\d.]+)\s+\[([\d.]+),\s*([\d.]+)\]\s+([\d.]+)\s+\[([\d.]+),\s*([\d.]+)\]\s+([\d.]+)k'
+)
+_RE_VCTK_QUAL_ROW = re.compile(
+    r'^\s+(\S+)\s+([\d.]+)\s+\[([\d.]+),\s*([\d.]+)\]\s+([\d.]+)\s+\[([\d.]+),\s*([\d.]+)\]\s*$'
+)
+_RE_VCTK_WX_HEAD = re.compile(
+    r'^\s+(\S+\s+vs\s+\S+)\s+(PESQ-WB|STOI|zlib ratio)\s+([\d.]+)\s+(<0\.0001|[\d.]+)\s+(\*{1,3}|ns)'
+)
+_RE_VCTK_WX_CONT = re.compile(
+    r'^\s{10,}(PESQ-WB|STOI|zlib ratio)\s+([\d.]+)\s+(<0\.0001|[\d.]+)\s+(\*{1,3}|ns)'
+)
+
+
+def _load_second_dataset(path: Path):
+    compression: dict = {}
+    quality: dict = {}
+    wilcoxon: list = []
+    mode = None
+    last_contrast = None
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if 'COMPRESSION RATIO' in line:
+            mode = 'comp'
+        elif 'QUALITY METRICS' in line:
+            mode = 'qual'
+        elif 'WILCOXON SIGNED-RANK' in line:
+            mode = 'wilcox'
+
+        if mode == 'comp':
+            m = _RE_VCTK_COMP_ROW.match(line)
+            if m:
+                phase, zm, zlo, zhi, hm, hlo, hhi, kbps = m.groups()
+                compression[phase] = dict(
+                    ratio=float(zm), ratio_lo=float(zlo), ratio_hi=float(zhi),
+                    mean_h=float(hm), h_lo=float(hlo), h_hi=float(hhi),
+                    kbps=float(kbps),
+                )
+        elif mode == 'qual':
+            m = _RE_VCTK_QUAL_ROW.match(line)
+            if m:
+                phase, pm, plo, phi, sm, slo, shi = m.groups()
+                quality[phase] = dict(
+                    pesq=float(pm), pesq_lo=float(plo), pesq_hi=float(phi),
+                    stoi=float(sm), stoi_lo=float(slo), stoi_hi=float(shi),
+                )
+        elif mode == 'wilcox':
+            m = _RE_VCTK_WX_HEAD.match(line)
+            if m:
+                contrast, metric, wstat, pval, sig = m.groups()
+                last_contrast = contrast.strip()
+                wilcoxon.append(dict(contrast=last_contrast, metric=metric,
+                                      w_stat=float(wstat), p_value=pval, sig=sig))
+                continue
+            m = _RE_VCTK_WX_CONT.match(line)
+            if m and last_contrast:
+                metric, wstat, pval, sig = m.groups()
+                wilcoxon.append(dict(contrast=last_contrast, metric=metric,
+                                      w_stat=float(wstat), p_value=pval, sig=sig))
+
+    return dict(compression=compression, quality=quality, wilcoxon=wilcoxon)

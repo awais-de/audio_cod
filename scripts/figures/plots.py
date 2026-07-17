@@ -275,6 +275,8 @@ def fig_07_causality(data: dict) -> plt.Figure:
     metrics = data.get('metrics')
     if metrics is None:
         raise DataNotAvailable('metrics DataFrame not loaded')
+    wilcoxon = data.get('wilcoxon', [])
+    nc_p = {r['metric']: r['p_value'] for r in wilcoxon if r['contrast'] == 'G vs NC'}
     g  = metrics[metrics['phase'] == 'G'].set_index('speaker')
     nc = metrics[metrics['phase'] == 'NC'].set_index('speaker')
     common = g.index.intersection(nc.index)
@@ -296,7 +298,8 @@ def fig_07_causality(data: dict) -> plt.Figure:
         ax.set_xlabel('Non-causal  (Phase NC)')
         ax.set_ylabel('Causal  (Phase G)')
         ax.grid(True)
-    fig.suptitle('Causal vs non-causal — per speaker  (n=40, ns)', fontsize=9)
+    p_str = f'PESQ-WB p={nc_p.get("PESQ-WB", "n/a")}, STOI p={nc_p.get("STOI", "n/a")}' if nc_p else 'ns'
+    fig.suptitle(f'Causal vs non-causal — per speaker  (n=40, {p_str})', fontsize=9)
     return fig
 
 
@@ -675,4 +678,175 @@ def fig_19_music_eval(data: dict) -> plt.Figure:
     fig.suptitle('Music eval — MUSDB18-HQ test set, n=40 tracks\n'
                  'D-VAE: highest compression + lowest quality  (p<0.0001***)',
                  fontsize=8.5)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# fig_20 — Architecture schematic (deliverable 1: the codec itself)
+# ---------------------------------------------------------------------------
+
+def fig_20_architecture(_data: dict) -> plt.Figure:
+    """Static pipeline diagram — doesn't depend on evaluation data."""
+    io_color, model_color, latent_color, quant_color, bit_color = (
+        '#999999', '#4878d0', '#77bedb', '#c4ad66', '#6acc65')
+    boxes = [
+        ('16 kHz\nspeech', io_color),
+        ('Causal encoder\n(causal convs +\n6× Transformer,\nd_model=384)', model_color),
+        ('32-dim latent\n@ 100 Hz', latent_color),
+        ('3-bit scalar\nquantizer', quant_color),
+        ('zlib entropy\ncoding →\nbitstream', bit_color),
+        ('zlib decode +\ndequantize', bit_color),
+        ('Causal decoder\n(mirrors encoder)', model_color),
+        ('16 kHz speech\n(reconstructed)', io_color),
+    ]
+    n = len(boxes)
+    fig, ax = plt.subplots(figsize=(style.COL2_W, style.ROW_H))
+    ax.set_xlim(0, n)
+    ax.set_ylim(0, 1)
+    ax.axis('off')
+
+    box_w, box_h = 0.86, 0.6
+    for i, (label, color) in enumerate(boxes):
+        cx = i + 0.5
+        ax.add_patch(mpatches.FancyBboxPatch(
+            (cx - box_w / 2, 0.5 - box_h / 2), box_w, box_h,
+            boxstyle='round,pad=0.02,rounding_size=0.04',
+            facecolor=color, edgecolor='white', linewidth=0.8, alpha=0.88, zorder=3))
+        ax.text(cx, 0.5, label, ha='center', va='center', fontsize=6.2, zorder=4)
+        if i < n - 1:
+            ax.annotate('', xy=(i + 1 + 0.5 - box_w / 2, 0.5), xytext=(cx + box_w / 2, 0.5),
+                        arrowprops=dict(arrowstyle='->', color='#444', lw=1.0), zorder=2)
+
+    ax.set_title('EntroCodec streaming pipeline: encode → bitstream → decode', fontsize=9)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# fig_21 — Model complexity: EntroCodec vs EnCodec
+# ---------------------------------------------------------------------------
+
+def fig_21_complexity(data: dict) -> plt.Figure:
+    c = data['complexity']
+    ours, enc = c['ours'], c['encodec']
+
+    labels = ['EntroCodec', 'EnCodec']
+    colors = [style.PHASE_COLORS['G'], style.PHASE_COLORS['D-VAE']]
+
+    fig, axes = plt.subplots(1, 2, figsize=(style.COL1_W, style.ROW_H))
+    for ax, vals, ylabel, fmt in [
+        (axes[0], [ours['params'] / 1e6, enc['params'] / 1e6], 'Params (M)', '{:.1f}M'),
+        (axes[1], [ours['macs'] / 1e9, enc['macs'] / 1e9], 'MACs / 1s clip (G)', '{:.1f}G'),
+    ]:
+        bars = ax.bar(labels, vals, 0.55, color=colors, edgecolor='white', linewidth=0.5)
+        for bar, v in zip(bars, vals):
+            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.02 * max(vals),
+                    fmt.format(v), ha='center', va='bottom', fontsize=7)
+        ax.set_ylabel(ylabel)
+        ax.set_ylim(0, max(vals) * 1.2)
+        ax.grid(True, axis='y')
+
+    ratio_params = ours['params'] / enc['params']
+    ratio_macs = ours['macs'] / enc['macs']
+    fig.suptitle(f'Model complexity: EntroCodec vs EnCodec\n'
+                 f'({ratio_params:.2f}× params, {ratio_macs:.1f}× MACs — driven by unbounded\n'
+                 f'Transformer attention, not by the scalar quantizer itself)', fontsize=8.5)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# fig_22 — End-to-end delay: algorithmic vs measured CPU latency
+# ---------------------------------------------------------------------------
+
+def fig_22_latency(data: dict) -> plt.Figure:
+    c = data['complexity']
+    ours, enc = c['ours'], c['encodec']
+    colors = [style.PHASE_COLORS['G'], style.PHASE_COLORS['D-VAE']]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
+
+    # Left: algorithmic delay — architecturally comparable
+    labels = ['EntroCodec', 'EnCodec']
+    delay_vals = [ours['delay_ms'], enc['delay_ms']]
+    bars = ax1.bar(labels, delay_vals, 0.5, color=colors, edgecolor='white', linewidth=0.5)
+    for bar, v in zip(bars, delay_vals):
+        ax1.text(bar.get_x() + bar.get_width() / 2, v + 0.3, f'{v:.2f} ms',
+                  ha='center', va='bottom', fontsize=7)
+    ax1.set_ylabel('Algorithmic delay (ms)')
+    ax1.set_ylim(0, max(delay_vals) * 1.5)
+    ax1.set_title('Min. buffering — architecturally comparable', fontsize=8)
+    ax1.grid(True, axis='y')
+
+    # Right: measured CPU compute latency — the real, unresolved gap
+    metrics = ['Encode', 'Decode']
+    ours_vals = [ours['encode_ms'], ours['decode_ms']]
+    enc_vals = [enc['encode_ms'], enc['decode_ms']]
+    x = np.arange(2)
+    w = 0.35
+    ax2.bar(x - w / 2, ours_vals, w, color=style.PHASE_COLORS['G'],
+            edgecolor='white', linewidth=0.5, label='EntroCodec')
+    ax2.bar(x + w / 2, enc_vals, w, color=style.PHASE_COLORS['D-VAE'],
+            edgecolor='white', linewidth=0.5, label='EnCodec')
+    for xi, (ov, ev) in enumerate(zip(ours_vals, enc_vals)):
+        ax2.text(xi - w / 2, ov * 1.15, f'{ov:.0f}', ha='center', va='bottom', fontsize=6.5)
+        ax2.text(xi + w / 2, ev * 1.15, f'{ev:.0f}', ha='center', va='bottom', fontsize=6.5)
+    ax2.set_yscale('log')
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(metrics)
+    ax2.set_ylabel('CPU latency (ms, log scale)')
+    ratio_encode = ours['encode_ms'] / enc['encode_ms']
+    ax2.set_title(f'CPU compute — ~{ratio_encode:.0f}× slower (not yet real-time)', fontsize=8)
+    ax2.grid(True, axis='y', which='both')
+
+    style.legend(fig, ax=ax2)
+    fig.suptitle(f'End-to-end delay: comparable in theory, ~{ratio_encode:.0f}× slower in practice\n'
+                 f'(current scripts default to {ours["chunk_ms"] / 1000:.0f}s chunking — '
+                 f'an implementation choice, not architectural)', fontsize=8.5)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# fig_23 — VCTK cross-corpus generalization (OOD validation)
+# ---------------------------------------------------------------------------
+
+def fig_23_vctk_generalization(data: dict) -> plt.Figure:
+    vctk = data['vctk']
+    comp, qual, wilcoxon = vctk['compression'], vctk['quality'], vctk['wilcoxon']
+    phases = [p for p in ['C', 'D', 'D-VAE', 'G'] if p in comp]
+    colors = [style.PHASE_COLORS[p] for p in phases]
+
+    ratios = [comp[p]['ratio'] for p in phases]
+    r_lo = [comp[p]['ratio'] - comp[p]['ratio_lo'] for p in phases]
+    r_hi = [comp[p]['ratio_hi'] - comp[p]['ratio'] for p in phases]
+    pesq = [qual[p]['pesq'] for p in phases]
+    p_lo = [qual[p]['pesq'] - qual[p]['pesq_lo'] for p in phases]
+    p_hi = [qual[p]['pesq_hi'] - qual[p]['pesq'] for p in phases]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
+    x = np.arange(len(phases))
+    w = 0.55
+
+    bars1 = ax1.bar(x, ratios, w, color=colors, edgecolor='white', linewidth=0.5)
+    ax1.errorbar(x, ratios, yerr=[r_lo, r_hi], fmt='none', color='#333', linewidth=0.8, capsize=2)
+    for bar, v, hi in zip(bars1, ratios, r_hi):
+        ax1.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + hi + 0.05,
+                  f'{v:.2f}', ha='center', va='bottom', fontsize=6.5)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(phases)
+    ax1.set_ylabel('zlib compression ratio')
+    ax1.grid(True, axis='y')
+
+    bars2 = ax2.bar(x, pesq, w, color=colors, edgecolor='white', linewidth=0.5)
+    ax2.errorbar(x, pesq, yerr=[p_lo, p_hi], fmt='none', color='#333', linewidth=0.8, capsize=2)
+    for bar, v, hi in zip(bars2, pesq, p_hi):
+        ax2.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + hi + 0.01,
+                  f'{v:.3f}', ha='center', va='bottom', fontsize=6.5)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(phases)
+    ax2.set_ylabel('PESQ-WB')
+    ax2.grid(True, axis='y')
+
+    dvae_d = next(r for r in wilcoxon if r['contrast'] == 'D-VAE vs D' and r['metric'] == 'zlib ratio')
+    fig.suptitle('D-VAE anomaly reproduces on unseen speech (VCTK-Corpus-0.92, n=40)\n'
+                 f'Highest compression, lowest quality — zlib ratio, D-VAE vs D: '
+                 f'p={dvae_d["p_value"]}{dvae_d["sig"]}', fontsize=8.5)
     return fig
