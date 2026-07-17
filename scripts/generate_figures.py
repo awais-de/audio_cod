@@ -32,7 +32,7 @@ from figures.plots import DataNotAvailable
 
 FIGURES: dict[str, tuple] = {
     'fig_01':  (plots.fig_01_phase_progression,  'Phase PESQ+STOI bar chart C→G  (n=40, 95% CI)'),
-    'fig_02':  (plots.fig_02_rd_curve,           'R-D curve: PESQ-WB + STOI vs bitrate, ours vs EnCodec'),
+    'fig_02':  (plots.fig_02_rd_curve,           'R-D curve: PESQ-WB + STOI vs bitrate, EntroCodec vs EnCodec'),
     'fig_03':  (plots.fig_03_dim_entropy,        'Per-dimension entropy bar chart, Phase G'),
     'fig_04':  (plots.fig_04_entropy_quality,    'Latent entropy vs PESQ/STOI scatter (cross-phase)'),
     'fig_05':  (plots.fig_05_ood,                'OOD evaluation: bitrate + STOI by signal type'),

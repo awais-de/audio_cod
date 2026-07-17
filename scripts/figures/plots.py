@@ -68,7 +68,7 @@ def fig_01_phase_progression(data: dict) -> plt.Figure:
 
 
 # ---------------------------------------------------------------------------
-# fig_02 — R-D curve: PESQ-WB and STOI vs bitrate, ours vs EnCodec
+# fig_02 — R-D curve: PESQ-WB and STOI vs bitrate, EntroCodec vs EnCodec
 # ---------------------------------------------------------------------------
 
 def fig_02_rd_curve(data: dict) -> plt.Figure:
@@ -86,7 +86,7 @@ def fig_02_rd_curve(data: dict) -> plt.Figure:
         enc_vals = [r[metric] for r in encodec]
 
         ax.plot(our_kbps, our_vals, 'o-', color=style.PHASE_COLORS['G'], linewidth=1.2,
-                markersize=4, label='Ours (Phase G, SQ)')
+                markersize=4, label='EntroCodec (Phase G, SQ)')
         # 1-bit and 2-bit points sit only ~0.2 kbps apart — label them
         # directly so the pair doesn't read as a single marker.
         ax.annotate('1-bit', (our_kbps[0], our_vals[0]), textcoords='offset points',
@@ -106,7 +106,7 @@ def fig_02_rd_curve(data: dict) -> plt.Figure:
         ax.grid(True)
 
     style.legend(fig, ax=axes[0], ncol=3)
-    fig.suptitle('Rate-distortion: ours vs EnCodec', fontsize=9)
+    fig.suptitle('Rate-distortion: EntroCodec vs EnCodec', fontsize=9)
     return fig
 
 

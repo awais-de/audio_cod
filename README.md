@@ -1,6 +1,6 @@
 # Neural Audio Codec: What Determines the Rate–Distortion Ceiling of Scalar-Quantized Speech Codecs?
 
-A causal, streaming-capable neural audio codec built as the instrument for a controlled empirical study, not as an attempt to outperform state-of-the-art systems. The question: when a neural speech codec uses scalar quantization and a fixed, non-learned entropy coder, what sets the quality ceiling — quantizer resolution, or the information content the training objective places in the latent?
+**EntroCodec** — a causal, streaming-capable neural audio codec built as the instrument for a controlled empirical study, not as an attempt to outperform state-of-the-art systems. The question: when a neural speech codec uses scalar quantization and a fixed, non-learned entropy coder, what sets the quality ceiling — quantizer resolution, or the information content the training objective places in the latent?
 
 **Finding:** the ceiling is set by latent entropy — controlled by the training objective — not by quantization resolution. Adding more quantization bits past a point barely moves quality; deliberately regularizing entropy down (via a KL term) moves quality down with it; deliberately training for richer perceptual detail moves both up together, every time. This repository contains the codec, the eight-phase controlled training curriculum that produced this evidence, and every supporting experiment.
 
@@ -93,8 +93,8 @@ Evaluated on LibriSpeech `test-clean` (5 speakers, 5-second clips, 16 kHz mono).
 | EnCodec 1.5 kbps (Meta) | 1.5 kbps | 1.611 | 0.829 |
 | EnCodec 3.0 kbps (Meta) | 3.0 kbps | 2.148 | 0.880 |
 | EnCodec 6.0 kbps (Meta) | 6.0 kbps | 2.842 | 0.922 |
-| Ours — Phase C | 5.7 kbps | 1.202 | 0.733 |
-| **Ours — Phase G (default)** | **5.9 kbps** | **1.279** | **0.766** |
+| EntroCodec — Phase C | 5.7 kbps | 1.202 | 0.733 |
+| **EntroCodec — Phase G (default)** | **5.9 kbps** | **1.279** | **0.766** |
 
 **On the gap to EnCodec:** EnCodec uses residual vector quantization and adversarial training — neither replicated here. Section 3 rules out causality as the explanation for the gap. The contribution is the controlled evidence for *why* scalar-quantization codecs hit their quality ceiling, not closing the gap to systems with structurally different architectures.
 
