@@ -509,19 +509,19 @@ def fig_16_multi_coder(data: dict) -> plt.Figure:
     c3 = style.PHASE_COLORS['D']
 
     fig, ax = plt.subplots(figsize=(style.COL2_W, style.ROW_H))
-    ax.bar(x - w,   zlib, w, color=c1, label='zlib',  edgecolor='white', linewidth=0.4)
+    ax.bar(x - w,   zlib, w, color=c1, label='zlib (baseline)', edgecolor='#c0392b', linewidth=1.4)
     ax.bar(x,       lzma, w, color=c2, label='lzma',  edgecolor='white', linewidth=0.4)
     ax.bar(x + w,   bz2,  w, color=c3, label='bz2',   edgecolor='white', linewidth=0.4)
     # zlib is the baseline used everywhere else in this analysis (fig_06,
-    # fig_15) — a thin red line from its bar top to bz2's marks the gain the
-    # stronger coders offer over that baseline, per phase.
-    dvae_idx = phases.index('D-VAE') if 'D-VAE' in phases else None
-    for xi, (z, b) in enumerate(zip(zlib, bz2)):
-        ax.plot([xi - w, xi + w], [z, b], color='#c0392b', linewidth=1.0, zorder=6)
-        if xi == dvae_idx:
-            ax.annotate(f'+{b - z:.3f}×  vs zlib', xy=(xi, (z + b) / 2),
-                        textcoords='offset points', xytext=(10, 0),
-                        fontsize=6.5, color='#c0392b', va='center')
+    # fig_15) — outlined in red, with a flat bracket to bz2 (straight, not a
+    # diagonal connecting two different bar heights) marking the gain the
+    # strongest coder offers over that baseline, for every phase.
+    for xi, (z, l, b) in enumerate(zip(zlib, lzma, bz2)):
+        y_bar = max(z, l, b) + 0.06
+        ax.plot([xi - w, xi - w, xi + w, xi + w], [z, y_bar, y_bar, b],
+                color='#c0392b', linewidth=0.9, zorder=6)
+        ax.text(xi, y_bar + 0.015, f'Δ {b - z:.3f}', ha='center', va='bottom',
+                fontsize=6.5, color='#c0392b')
     ax.set_xticks(x)
     ax.set_xticklabels(phases)
     ax.set_ylabel('Compression ratio')
@@ -606,18 +606,33 @@ def fig_18_channel_ablation(data: dict) -> plt.Figure:
         (axes[0], 'pesq', 'PESQ-WB'),
         (axes[1], 'stoi', 'STOI'),
     ]:
+        vals = {}
         for width_label, (phases, color) in widths.items():
-            vals = [ci[p][metric] if p in ci else float('nan') for p in phases]
+            v = [ci[p][metric] if p in ci else float('nan') for p in phases]
+            vals[width_label] = v
             offset = offsets[width_label]
-            ax.bar(x + offset, vals, w, color=color, edgecolor='white',
-                   linewidth=0.4, label=width_label, alpha=0.85)
-        # 32-dim is the baseline used throughout the rest of the thesis — a
-        # short reference line per phase makes 16/64-dim read as gain/loss
-        # against it, rather than three independent bars.
-        baseline_vals = [ci[p][metric] for p in widths['32-dim'][0]]
-        for xi, bv in zip(x, baseline_vals):
-            ax.plot([xi - 1.5 * w, xi + 1.5 * w], [bv, bv],
-                    color='#c0392b', linewidth=0.9, linestyle='--', zorder=6)
+            baseline = width_label == '32-dim'
+            ax.bar(x + offset, v, w, color=color, alpha=0.85, label=width_label,
+                   edgecolor='#c0392b' if baseline else 'white',
+                   linewidth=1.4 if baseline else 0.4)
+
+        # 32-dim is the baseline used throughout the rest of the thesis —
+        # outlined in red, with a bracket from 16-dim to 64-dim (skipping
+        # over the baseline bar in the middle, same convention as fig_16's
+        # zlib→bz2 bracket) marking the spread per phase. Two separate
+        # pairwise brackets were tried first but this figure only has half
+        # the width of fig_16's single panel (PESQ + STOI share the figure),
+        # and the two labels crowded into each other at that spacing.
+        v16, v32, v64 = vals['16-dim'], vals['32-dim'], vals['64-dim']
+        span = max(v16 + v32 + v64) - min(v16 + v32 + v64)
+        lift, pad = 0.1 * span, 0.03 * span
+        for xi, (a, m, b) in enumerate(zip(v16, v32, v64)):
+            y_bar = max(a, m, b) + lift
+            ax.plot([xi - w, xi - w, xi + w, xi + w], [a, y_bar, y_bar, b],
+                    color='#c0392b', linewidth=0.9, zorder=6)
+            ax.text(xi, y_bar + pad, f'Δ {b - a:.2f}', ha='center',
+                    va='bottom', fontsize=6, color='#c0392b')
+
         ax.set_xticks(x)
         ax.set_xticklabels(stage_labels)
         ax.set_xlabel('Curriculum phase')
@@ -625,9 +640,8 @@ def fig_18_channel_ablation(data: dict) -> plt.Figure:
         ax.grid(True, axis='y')
 
     legend_handles, legend_labels = axes[0].get_legend_handles_labels()
-    baseline_proxy = Line2D([0], [0], color='#c0392b', linestyle='--', linewidth=0.9)
-    style.legend(fig, handles=legend_handles + [baseline_proxy],
-                 labels=legend_labels + ['32-dim (baseline)'], ncol=4)
+    legend_labels = [l if l != '32-dim' else '32-dim (baseline)' for l in legend_labels]
+    style.legend(fig, handles=legend_handles, labels=legend_labels, ncol=3)
 
     fig.suptitle('Bottleneck width vs quality, relative to the 32-dim baseline\n'
                  '(G-16 vs G: p<0.0001***;  G-64 vs G: p=0.006**;  n=40)',
