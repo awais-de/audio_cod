@@ -12,6 +12,8 @@ from matplotlib.lines import Line2D
 
 from . import style
 
+style.apply()
+
 
 class DataNotAvailable(RuntimeError):
     """Raised when a figure needs data that can't be derived from comparison reports."""
@@ -44,8 +46,8 @@ def fig_01_phase_progression(data: dict) -> plt.Figure:
         bars = ax.bar(x, vals, w, color=colors, edgecolor='white', linewidth=0.5)
         ax.errorbar(x, vals, yerr=[errs_lo, errs_hi], fmt='none',
                     color='#333', linewidth=0.8, capsize=2)
-        for bar, v in zip(bars, vals):
-            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + errs_hi[x[0]],
+        for bar, v, err_hi in zip(bars, vals, errs_hi):
+            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + err_hi,
                     f'{v:.3f}', ha='center', va='bottom', fontsize=6.5, color='#333')
         ax.set_xticks(x)
         ax.set_xticklabels(phases, fontsize=7)
@@ -97,7 +99,7 @@ def fig_01b_stoi_all_phases(data: dict) -> plt.Figure:
         ax.text(i, v + 0.005, f'{v:.3f}', ha='center', va='bottom', fontsize=6.5)
 
     ab_patch = mpatches.Patch(facecolor='#999', hatch='//', label='A/B: STOI only (PESQ unavailable)')
-    ax.legend(handles=[ab_patch], fontsize=7, loc='lower right')
+    style.legend(fig, handles=[ab_patch], labels=[ab_patch.get_label()])
     ax.set_xticks(x)
     ax.set_xticklabels(phase_order)
     ax.set_ylabel('STOI')
@@ -144,7 +146,7 @@ def fig_03_dim_entropy(data: dict) -> plt.Figure:
     ax.set_title('Per-dimension entropy — Phase G', fontsize=9)
     ax.set_xlim(-0.5, len(vals) - 0.5)
     ax.set_ylim(0.8, 2.2)
-    ax.legend(fontsize=7)
+    style.legend(fig, ax=ax)
     ax.grid(True, axis='y')
     return fig
 
@@ -198,6 +200,7 @@ def fig_05_ood(data: dict) -> plt.Figure:
               for r in rows]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H + 0.5))
+    cap_line = None
     for ax, vals, xlabel, xlim, lbl in [
         (ax1, kbps,  'Effective bitrate (kbps)', (0, 10.5), True),
         (ax2, stois, 'STOI',                     (-0.1, 1.0), False),
@@ -211,15 +214,19 @@ def fig_05_ood(data: dict) -> plt.Figure:
         ax.set_xlim(*xlim)
         ax.grid(True, axis='x')
         if lbl:
-            ax.axvline(9.6, color='#aaa', linestyle=':', linewidth=0.8, label='9.6 kbps cap')
-            ax.legend(fontsize=7)
+            cap_line = ax.axvline(9.6, color='#aaa', linestyle=':', linewidth=0.8,
+                                   label='9.6 kbps cap')
+
+    # ax2 repeats ax1's category labels by default — drop them so they don't
+    # bleed into the middle of the figure, on top of ax1's bars.
+    ax2.set_yticklabels([])
 
     legend_els = [
         mpatches.Patch(color=style.PHASE_COLORS['G'],         label='Speech signal'),
         mpatches.Patch(color=style.PHASE_COLORS['D-Entropy'], label='Synthetic signal'),
+        cap_line,
     ]
-    fig.legend(handles=legend_els, fontsize=7, loc='lower center', ncol=2,
-               bbox_to_anchor=(0.5, -0.02))
+    style.legend(fig, handles=legend_els, labels=[h.get_label() for h in legend_els], ncol=3)
     fig.suptitle('OOD evaluation — Phase G', fontsize=9)
     return fig
 
@@ -299,7 +306,7 @@ def fig_08_speaker_probe(data: dict) -> plt.Figure:
                linewidth=0.9, label=f'Mean ({probe["accuracy"]:.1f}%)')
     ax.set_xlabel('Recall (%)')
     ax.set_xlim(0, 115)
-    ax.legend(fontsize=7, loc='lower right')
+    style.legend(fig, ax=ax)
     ax.grid(True, axis='x')
     ax.set_title('Speaker identity probe — Phase G', fontsize=9)
     return fig
@@ -445,7 +452,7 @@ def fig_16_multi_coder(data: dict) -> plt.Figure:
     ax.set_xticks(x)
     ax.set_xticklabels(phases)
     ax.set_ylabel('Compression ratio')
-    ax.legend(fontsize=7)
+    style.legend(fig, ax=ax)
     ax.grid(True, axis='y')
     ax.set_title('Compression ratio across coders — D-VAE ranks highest in all', fontsize=9)
     return fig
@@ -466,7 +473,8 @@ def fig_17_entropy_ablation(data: dict) -> plt.Figure:
         'kbps': (0.0, 6.5),
     }
 
-    fig, axes = plt.subplots(1, 3, figsize=(style.COL2_W, style.ROW_H))
+    fig, axes = plt.subplots(1, 3, figsize=(style.COL2_W, style.ROW_H),
+                              gridspec_kw={'wspace': 0.45})
     for ax, metric, label in [
         (axes[0], 'pesq', 'PESQ-WB'),
         (axes[1], 'stoi', 'STOI'),
@@ -518,23 +526,22 @@ def fig_18_channel_ablation(data: dict) -> plt.Figure:
     w = 0.25
     offsets = {'16-dim': -w, '32-dim': 0, '64-dim': +w}
 
-    for metric_idx, (ax, metric, ylabel) in enumerate([
+    for ax, metric, ylabel in [
         (axes[0], 'pesq', 'PESQ-WB'),
         (axes[1], 'stoi', 'STOI'),
-    ]):
-        legend_handles = []
+    ]:
         for width_label, (phases, color) in widths.items():
             vals = [ci[p][metric] if p in ci else float('nan') for p in phases]
             offset = offsets[width_label]
             ax.bar(x + offset, vals, w, color=color, edgecolor='white',
                    linewidth=0.4, label=width_label, alpha=0.85)
-            legend_handles.append(mpatches.Patch(color=color, label=width_label))
         ax.set_xticks(x)
         ax.set_xticklabels(stage_labels)
         ax.set_xlabel('Curriculum phase')
         ax.set_ylabel(ylabel)
-        ax.legend(fontsize=7)
         ax.grid(True, axis='y')
+
+    style.legend(fig, ax=axes[0], ncol=3)
 
     fig.suptitle('Channel width ablation: 16 / 32 / 64 bottleneck dimensions\n'
                  '(G-16 vs G: p<0.0001***;  G-64 vs G: p=0.006**;  n=40)',
@@ -620,7 +627,7 @@ def _rd_curve(data: dict, metric: str) -> plt.Figure:
             markersize=4, label='EnCodec (RVQ)')
     ax.set_xlabel('Effective bitrate (kbps)')
     ax.set_ylabel(ylabel)
-    ax.legend(fontsize=7)
+    style.legend(fig, ax=ax)
     ax.grid(True)
     ax.set_title(f'Rate-distortion: {ylabel}', fontsize=9)
     return fig

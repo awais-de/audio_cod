@@ -1,4 +1,6 @@
 """Shared matplotlib style, sizing, and phase palette for thesis figures."""
+from __future__ import annotations
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -66,3 +68,23 @@ def apply() -> None:
 def new_fig(w: float = COL2_W, h: float = ROW_H) -> plt.Figure:
     apply()
     return plt.figure(figsize=(w, h))
+
+
+def legend(fig: plt.Figure, ax=None, handles=None, labels=None, ncol: int | None = None) -> None:
+    """Place a figure's legend in one fixed slot — outside the axes, centered
+    below the plot — so it never overlaps plotted data and looks the same
+    across every figure. Every figure that needs a legend should call this
+    instead of ax.legend()/fig.legend() directly.
+
+    handles/labels default to whatever the given (or first) axes has labelled
+    via label= kwargs on its artists.
+    """
+    if handles is None:
+        src = ax if ax is not None else fig.axes[0]
+        handles, labels = src.get_legend_handles_labels()
+    if ncol is None:
+        ncol = len(handles)
+    # 'outside' placement only reserves space correctly under constrained
+    # layout — figure functions in this module don't otherwise enable it.
+    fig.set_layout_engine('constrained')
+    fig.legend(handles, labels, loc='outside lower center', ncol=ncol, fontsize=7)
