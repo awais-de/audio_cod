@@ -48,20 +48,32 @@ except ImportError:
 
 # All phases evaluated — checkpoints must exist under checkpoints_active/
 PHASES = [
-    ('C',     PROJECT_ROOT / 'checkpoints_active/temporal_phaseC/best.pt'),
-    ('D',     PROJECT_ROOT / 'checkpoints_active/temporal_phaseD/best.pt'),
-    ('D-VAE', PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae/best.pt'),
-    ('E',     PROJECT_ROOT / 'checkpoints_active/temporal_phaseE/best.pt'),
-    ('F',     PROJECT_ROOT / 'checkpoints_active/temporal_phaseF/best.pt'),
-    ('G',     PROJECT_ROOT / 'checkpoints_active/temporal_phaseG/best.pt'),
-    ('NC',    PROJECT_ROOT / 'checkpoints_active/temporal_phaseNC/best.pt'),
+    # Original curriculum (20 CP project)
+    ('C',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseC/best.pt'),
+    ('D',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseD/best.pt'),
+    ('D-VAE',     PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae/best.pt'),
+    ('E',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseE/best.pt'),
+    ('F',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseF/best.pt'),
+    ('G',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseG/best.pt'),
+    ('NC',        PROJECT_ROOT / 'checkpoints_active/temporal_phaseNC/best.pt'),
+    # MS Thesis — second causal mechanism
+    ('D-Entropy', PROJECT_ROOT / 'checkpoints_active/temporal_phaseEntropy/best.pt'),
+    # MS Thesis — channel width ablation
+    ('G-16dim',   PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_16/best.pt'),
+    ('G-64dim',   PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_64/best.pt'),
 ]
 
 # Contrasts for Wilcoxon signed-rank tests.
 # Each entry: (label, phase_A, phase_B, interpretation)
 CONTRASTS = [
-    ('G vs NC',   'G',     'NC',    'causal vs non-causal (smaller G = causality costs quality)'),
-    ('D-VAE vs D','D-VAE', 'D',     'entropy-suppressed vs base (smaller D-VAE = KL hurts quality)'),
+    # 20 CP project
+    ('G vs NC',        'G',         'NC',      'causal vs non-causal (smaller G = causality costs quality)'),
+    ('D-VAE vs D',     'D-VAE',     'D',       'entropy-suppressed vs base (smaller D-VAE = KL hurts quality)'),
+    # MS Thesis: second causal mechanism
+    ('D-Entr vs D',    'D-Entropy', 'D',       'soft entropy penalty vs base (independent mechanism check)'),
+    # MS Thesis: channel width ablation
+    ('G-16 vs G',      'G-16dim',   'G',       'narrower bottleneck vs standard (coupling holds at 16-dim?)'),
+    ('G-64 vs G',      'G-64dim',   'G',       'wider bottleneck vs standard (coupling holds at 64-dim?)'),
 ]
 
 
