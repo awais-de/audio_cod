@@ -6,7 +6,7 @@ A causal, streaming-capable neural audio codec built as the instrument for a con
 
 Developed at TU Ilmenau, Faculty of Electrical Engineering and Information Technology, under the supervision of Prof. Gerald Schuller. **Status:** project Exposé submitted; manuscript in preparation.
 
-![Entropy–quality tension across the training curriculum](plots/entropy_pesq_scatter.png)
+![Entropy–quality tension across the training curriculum](plots/fig_04.png)
 
 ---
 
@@ -44,11 +44,11 @@ Every phase measures two things after training: perceptual quality (PESQ-WB, STO
 
 Phase D-VAE is the deliberate exception, and it's the piece that turns this from a correlation into evidence: a KL-divergence term directly penalizes the latent's entropy, with no change to the reconstruction objective. Entropy drops sharply (1.090 vs. ~1.5 bits elsewhere) — and quality drops with it. This is the one experiment in the curriculum where entropy was pushed in the *opposite* direction from every other phase, on purpose, and quality followed it down anyway.
 
-![Quality metrics across the full 8-phase curriculum](plots/phase_progression.png)
+![Quality metrics across the full 8-phase curriculum](plots/fig_01.png)
 
 The effect isn't concentrated in a few latent dimensions — it shows up broadly across nearly all 32:
 
-![Per-dimension entropy across phases](plots/dim_entropy_heatmap.png)
+![Per-dimension entropy across phases](plots/fig_10.png)
 
 ### 2. Adding quantization bits stops helping — the ceiling isn't resolution
 
@@ -65,7 +65,7 @@ Phase G's trained weights, swept from 1-bit to 6-bit quantization at inference t
 
 Going from 1-bit to 3-bit produces real gains. Past 3-bit, bitrate *triples* (5.87 → 15.18 kbps) while STOI moves only 0.793 → 0.806. If the ceiling were a resolution problem, more bits would keep helping. It doesn't — it plateaus hard, meaning the latent had already run out of exploitable information well before the quantizer ran out of levels.
 
-![Rate-distortion sweep: PESQ-WB and STOI vs bitrate, 1-bit through 6-bit, EnCodec shown for reference](plots/rd_sweep.png)
+![Rate-distortion sweep: PESQ-WB and STOI vs bitrate, 1-bit through 6-bit, EnCodec shown for reference](plots/fig_02.png)
 
 Reproduce with `python scripts/13_rd_sweep.py`.
 
@@ -109,15 +109,15 @@ Three additional experiments characterize the latent and rule out alternative ex
 
 **Speaker identity is not disentangled from content.** A linear probe on the frozen, mean-pooled latent recovers speaker identity at 35.8% accuracy against a 3.1% chance baseline (32 speakers) — expected, since reconstruction-only training has no mechanism to separate "what is said" from "who said it."
 
-![Speaker identity linear probe, per-speaker recall](plots/speaker_probe_recall.png)
+![Speaker identity linear probe, per-speaker recall](plots/fig_08.png)
 
 **The bitstream fails completely, not gracefully, under corruption.** zlib's CRC-32 checksum means a single flipped bit causes total decode failure rather than degraded audio — 0% decode success at bit error rate ≥ 0.1%. A real deployment needs a channel-coding layer (e.g. Reed–Solomon) underneath this codec; this repository does not include one.
 
-![Bitstream corruption robustness](plots/corruption_robustness.png)
+![Bitstream corruption robustness](plots/fig_09.png)
 
 **Effective bitrate tracks signal complexity automatically, even out-of-distribution**, despite training exclusively on clean speech:
 
-![Bitrate and intelligibility across signal types](plots/ood_bitrate.png)
+![Bitrate and intelligibility across signal types](plots/fig_05.png)
 
 A pure tone compresses to 0.34 kbps; white/pink noise approaches the 9.6 kbps theoretical cap — bitrate is a direct, mechanical readout of latent entropy (Section 1), and that holds for signals the model never saw in training.
 
@@ -129,6 +129,8 @@ A pure tone compresses to 0.34 kbps; white/pink noise approaches the 9.6 kbps th
 - **No positional encoding.** Temporal order comes from causal convolutions and the causal attention mask only.
 - **Dropout was never active.** All training scripts passed `dropout=0.0`. Regularization came from noise augmentation and Phase D-VAE's KL term only.
 - **Latent width (`bottleneck_dim=32`) has not been ablated.** The R-D sweep varies bit-depth against a fixed 32-dimensional bottleneck; whether a wider or narrower bottleneck shifts the quality ceiling is untested and not claimed. A fair comparison requires replaying the full curriculum at each candidate width. Scoped to future work.
+
+This 20 CP project is extended in the MS thesis (`thesis/entropy-penalty` branch), which tests whether the coupling generalises across a second mechanism (entropy penalty training), music as a second modality, bottleneck width, and quantizer class (SQ vs RVQ).
 
 ---
 
