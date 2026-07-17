@@ -26,9 +26,9 @@ from src.codec_utils import load_model, encode_decode, compute_compression_stats
 from src.paths import get_dataset_paths
 
 PHASES = [
-    ('C',        PROJECT_ROOT / 'checkpoints_active/temporal_phaseC/best.pt'),
-    ('D-VAE',    PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae/best.pt'),
-    ('D-Entropy',PROJECT_ROOT / 'checkpoints_active/temporal_phaseEntropy/best.pt'),
+    ('G-16dim',  PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_16/best.pt'),
+    ('G-32dim',  PROJECT_ROOT / 'checkpoints_active/temporal_phaseG/best.pt'),
+    ('G-64dim',  PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_64/best.pt'),
 ]
 
 
@@ -106,28 +106,27 @@ def main():
     for name, r in results.items():
         print(f"{name:<14} {r['stoi']:>8.4f} {r['H']:>10.4f} {r['zlib']:>12.4f}")
 
-    c   = results['C']
-    dv  = results['D-VAE']
-    de  = results['D-Entropy']
+    ref = results['G-32dim']
 
     print(f"\n{'─'*60}")
-    print("Deltas vs Phase C:")
-    print(f"  D-VAE:     ΔSTOI={dv['stoi']-c['stoi']:+.4f}  ΔH={dv['H']-c['H']:+.4f}bits  Δzlib={dv['zlib']-c['zlib']:+.4f}x")
-    print(f"  D-Entropy: ΔSTOI={de['stoi']-c['stoi']:+.4f}  ΔH={de['H']-c['H']:+.4f}bits  Δzlib={de['zlib']-c['zlib']:+.4f}x")
+    print("Deltas vs 32-dim (existing baseline):")
+    for name, r in results.items():
+        if name == 'G-32dim':
+            continue
+        print(f"  {name}: ΔSTOI={r['stoi']-ref['stoi']:+.4f}  "
+              f"ΔH={r['H']-ref['H']:+.4f}bits  Δzlib={r['zlib']-ref['zlib']:+.4f}x")
 
     print(f"\n{'─'*60}")
-    print("Decision:")
-    h_drop = c['H'] - de['H']
-    stoi_drop = c['stoi'] - de['stoi']
-    if h_drop > 0.15 and stoi_drop > 0.02:
-        print(f"  ✓ Mechanism confirmed: H dropped {h_drop:.4f} bits, STOI dropped {stoi_drop:.4f}")
-        print(f"    Keep β=0.01. Proceed to full eval on Windows.")
-    elif h_drop > 0.05:
-        print(f"  ~ Weak signal: H dropped {h_drop:.4f} bits, STOI dropped {stoi_drop:.4f}")
-        print(f"    Consider rerun with --entropy-max 0.05 for a stronger effect.")
+    print("Coupling check (does H track quality across widths?):")
+    vals = list(results.values())
+    h_order    = sorted(results.keys(), key=lambda k: results[k]['H'])
+    stoi_order = sorted(results.keys(), key=lambda k: results[k]['stoi'])
+    if h_order == stoi_order:
+        print(f"  ✓ H and STOI rank identically across widths — coupling holds.")
     else:
-        print(f"  ✗ No meaningful effect: H dropped only {h_drop:.4f} bits")
-        print(f"    Rerun with --entropy-max 0.05 or 0.1")
+        print(f"  H rank:    {' < '.join(h_order)}")
+        print(f"  STOI rank: {' < '.join(stoi_order)}")
+        print(f"  ~ Ranks differ — inspect manually.")
 
 
 if __name__ == '__main__':
