@@ -617,21 +617,35 @@ def fig_18_channel_ablation(data: dict) -> plt.Figure:
                    linewidth=1.4 if baseline else 0.4)
 
         # 32-dim is the baseline used throughout the rest of the thesis —
-        # outlined in red, with a bracket from 16-dim to 64-dim (skipping
-        # over the baseline bar in the middle, same convention as fig_16's
-        # zlib→bz2 bracket) marking the spread per phase. Two separate
-        # pairwise brackets were tried first but this figure only has half
-        # the width of fig_16's single panel (PESQ + STOI share the figure),
-        # and the two labels crowded into each other at that spacing.
+        # outlined in red, with brackets to 16-dim and 64-dim (the two
+        # widths the experiment is actually about) marking the local
+        # gain/loss against it, per phase. Labels sit over their own outer
+        # bar (16-dim / 64-dim) rather than at the bracket's midpoint next
+        # to the shared baseline bar — that's twice the horizontal room
+        # (0.5 units vs 0.25) and is what stopped the two deltas colliding.
+        # Colored by direction relative to baseline: red = 16-dim loses
+        # quality, green = 64-dim gains it.
+        loss_color, gain_color = '#c0392b', '#27ae60'
         v16, v32, v64 = vals['16-dim'], vals['32-dim'], vals['64-dim']
         span = max(v16 + v32 + v64) - min(v16 + v32 + v64)
-        lift, pad = 0.1 * span, 0.03 * span
+        lift, pad = 0.1 * span, 0.06 * span
         for xi, (a, m, b) in enumerate(zip(v16, v32, v64)):
             y_bar = max(a, m, b) + lift
-            ax.plot([xi - w, xi - w, xi + w, xi + w], [a, y_bar, y_bar, b],
-                    color='#c0392b', linewidth=0.9, zorder=6)
-            ax.text(xi, y_bar + pad, f'Δ {b - a:.2f}', ha='center',
-                    va='bottom', fontsize=6, color='#c0392b')
+            ax.plot([xi - w, xi - w, xi, xi], [a, y_bar, y_bar, m],
+                    color=loss_color, linewidth=0.9, zorder=6)
+            # No "Δ" prefix — color already tells the reader which
+            # comparison this is, and the shorter string leaves more gap
+            # before the neighbouring phase group's own labels. Anchored at
+            # 1.0*w (not further out) — pushing labels out past their own
+            # bar shrinks the gap to the *next* group's facing label just as
+            # much as it grows the gap within this group, so it's a wash;
+            # only a shorter string (or smaller font) actually helps.
+            ax.text(xi - w, y_bar + pad, f'{a - m:+.2f}', ha='center',
+                    va='bottom', fontsize=5, color=loss_color)
+            ax.plot([xi, xi, xi + w, xi + w], [m, y_bar, y_bar, b],
+                    color=gain_color, linewidth=0.9, zorder=6)
+            ax.text(xi + w, y_bar + pad, f'{b - m:+.2f}', ha='center',
+                    va='bottom', fontsize=5, color=gain_color)
 
         ax.set_xticks(x)
         ax.set_xticklabels(stage_labels)
