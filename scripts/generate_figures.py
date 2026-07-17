@@ -33,7 +33,7 @@ from figures.plots import DataNotAvailable
 FIGURES: dict[str, tuple] = {
     'fig_01':  (plots.fig_01_phase_progression,  'Phase PESQ+STOI bar chart C→G  (n=40, 95% CI)'),
     'fig_01b': (plots.fig_01b_stoi_all_phases,   'STOI all phases A→G  (A/B hatched: PESQ unavailable)'),
-    'fig_02':  (plots.fig_02_rd_curve_pesq,      'R-D curve PESQ-WB: ours vs EnCodec'),
+    'fig_02':  (plots.fig_02_rd_curve,           'R-D curve: PESQ-WB + STOI vs bitrate, ours vs EnCodec'),
     'fig_03':  (plots.fig_03_dim_entropy,        'Per-dimension entropy bar chart, Phase G'),
     'fig_04':  (plots.fig_04_entropy_quality,    'Latent entropy vs PESQ/STOI scatter (cross-phase)'),
     'fig_05':  (plots.fig_05_ood,                'OOD evaluation: bitrate + STOI by signal type'),
@@ -44,7 +44,6 @@ FIGURES: dict[str, tuple] = {
     'fig_10':  (plots.fig_10_dim_heatmap,        '32×6 entropy heatmap: H(d) across phases'),
     'fig_11':  (plots.fig_11_attention,          '[SKIP] Attention stats — requires checkpoint inference'),
     'fig_12':  (plots.fig_12_quant_gap,          '[SKIP] Quantisation gap — requires float vs 3-bit inference'),
-    'fig_13':  (plots.fig_13_rd_curve_stoi,      'R-D curve STOI: ours vs EnCodec'),
     'fig_14':  (plots.fig_14_attn_heatmaps,      '[SKIP] Attention heatmaps — requires saved attention weights'),
     'fig_15':  (plots.fig_15_dual_entropy,       'Dual entropy confirmation: H̄(d) vs zlib ratio  (r=−0.9965)'),
     'fig_16':  (plots.fig_16_multi_coder,        'Multi-coder comparison: zlib + lzma + bz2'),

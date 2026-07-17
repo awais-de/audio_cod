@@ -110,11 +110,46 @@ def fig_01b_stoi_all_phases(data: dict) -> plt.Figure:
 
 
 # ---------------------------------------------------------------------------
-# fig_02 — R-D curve PESQ-WB
+# fig_02 — R-D curve: PESQ-WB and STOI vs bitrate, ours vs EnCodec
 # ---------------------------------------------------------------------------
 
-def fig_02_rd_curve_pesq(data: dict) -> plt.Figure:
-    return _rd_curve(data, metric='pesq')
+def fig_02_rd_curve(data: dict) -> plt.Figure:
+    rd = data['rd']
+    ours    = rd['ours']
+    encodec = rd['encodec']
+
+    our_kbps    = [r['eff_kbps'] for r in ours]
+    enc_kbps    = [r['kbps']     for r in encodec]
+    trained_idx = next(i for i, r in enumerate(ours) if r['bits'] == 3)
+
+    fig, axes = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
+    for ax, metric, ylabel in [(axes[0], 'pesq', 'PESQ-WB'), (axes[1], 'stoi', 'STOI')]:
+        our_vals = [r[metric] for r in ours]
+        enc_vals = [r[metric] for r in encodec]
+
+        ax.plot(our_kbps, our_vals, 'o-', color=style.PHASE_COLORS['G'], linewidth=1.2,
+                markersize=4, label='Ours (Phase G, SQ)')
+        # 1-bit and 2-bit points sit only ~0.2 kbps apart — label them
+        # directly so the pair doesn't read as a single marker.
+        ax.annotate('1-bit', (our_kbps[0], our_vals[0]), textcoords='offset points',
+                    xytext=(-8, 7), fontsize=6, ha='right', va='bottom',
+                    color=style.PHASE_COLORS['G'])
+        ax.annotate('2-bit', (our_kbps[1], our_vals[1]), textcoords='offset points',
+                    xytext=(8, 7), fontsize=6, ha='left', va='bottom',
+                    color=style.PHASE_COLORS['G'])
+        ax.scatter([our_kbps[trained_idx]], [our_vals[trained_idx]],
+                   color=style.PHASE_COLORS['G'], s=60, zorder=6, marker='*',
+                   label=f'Trained (3-bit, {our_kbps[trained_idx]:.1f} kbps)')
+        ax.plot(enc_kbps, enc_vals, 's--', color=style.PHASE_COLORS['D-VAE'], linewidth=1.0,
+                markersize=4, label='EnCodec (RVQ)')
+        ax.set_xlabel('Effective bitrate (kbps)')
+        ax.set_ylabel(ylabel)
+        ax.set_title(ylabel, fontsize=9)
+        ax.grid(True)
+
+    style.legend(fig, ax=axes[0], ncol=3)
+    fig.suptitle('Rate-distortion: ours vs EnCodec', fontsize=9)
+    return fig
 
 
 # ---------------------------------------------------------------------------
@@ -182,10 +217,17 @@ def fig_04_entropy_quality(data: dict) -> plt.Figure:
         for p, h, v in zip(phases, entropy, vals):
             c = style.PHASE_COLORS[p]
             ax.scatter(h, v, color=c, s=60, zorder=5, edgecolors='white', linewidths=0.5)
-            ax.annotate(p, (h, v), textcoords='offset points', xytext=(4, 2), fontsize=6)
         ax.set_xlabel('Mean H(d) per dimension (bits)')
         ax.set_ylabel(ylabel)
         ax.grid(True)
+
+    # Phase labels used to sit next to each point — with several phases
+    # clustered close together in H(d), the text overlapped. A shared legend
+    # below avoids that regardless of how tight the cluster is.
+    legend_handles = [Line2D([0], [0], marker='o', linestyle='none', markersize=6,
+                              markerfacecolor=style.PHASE_COLORS[p], markeredgecolor='white',
+                              label=p) for p in phases]
+    style.legend(fig, handles=legend_handles, labels=phases, ncol=len(phases))
     fig.suptitle('Latent entropy vs reconstruction quality (cross-phase)', fontsize=9)
     return fig
 
@@ -203,22 +245,25 @@ def fig_05_ood(data: dict) -> plt.Figure:
               for r in rows]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H + 0.5))
-    cap_line = None
     for ax, vals, xlabel, xlim, lbl in [
-        (ax1, kbps,  'Effective bitrate (kbps)', (0, 10.5), True),
+        (ax1, kbps,  'Effective bitrate (kbps)', (0, 12.0), True),
         (ax2, stois, 'STOI',                     (-0.1, 1.0), False),
     ]:
         bars = ax.barh(labels, vals, color=colors, edgecolor='white', linewidth=0.4)
         for bar, v in zip(bars, vals):
-            ax.text(max(bar.get_width(), 0) + 0.05 * xlim[1],
+            ax.text(max(bar.get_width(), 0) + 0.02 * xlim[1],
                     bar.get_y() + bar.get_height() / 2,
                     f'{v:.2f}', va='center', ha='left', fontsize=6.5)
         ax.set_xlabel(xlabel)
         ax.set_xlim(*xlim)
         ax.grid(True, axis='x')
         if lbl:
-            cap_line = ax.axvline(9.6, color='#aaa', linestyle=':', linewidth=0.8,
-                                   label='9.6 kbps cap')
+            # Annotated directly rather than via the legend — it's only
+            # relevant to this panel, not to the STOI panel alongside it.
+            ax.axvline(9.6, color='#aaa', linestyle=':', linewidth=0.8)
+            # Pushed just clear of the widest bar-end value label ("8.30").
+            ax.text(9.85, 0.97, '9.6 kbps cap', transform=ax.get_xaxis_transform(),
+                    rotation=90, va='top', ha='left', fontsize=6, color='#888')
 
     # ax2 repeats ax1's category labels by default — drop them so they don't
     # bleed into the middle of the figure, on top of ax1's bars.
@@ -227,9 +272,8 @@ def fig_05_ood(data: dict) -> plt.Figure:
     legend_els = [
         mpatches.Patch(color=style.PHASE_COLORS['G'],         label='Speech signal'),
         mpatches.Patch(color=style.PHASE_COLORS['D-Entropy'], label='Synthetic signal'),
-        cap_line,
     ]
-    style.legend(fig, handles=legend_els, labels=[h.get_label() for h in legend_els], ncol=3)
+    style.legend(fig, handles=legend_els, labels=[h.get_label() for h in legend_els], ncol=2)
     fig.suptitle('OOD evaluation — Phase G', fontsize=9)
     return fig
 
@@ -283,10 +327,15 @@ def fig_07_causality(data: dict) -> plt.Figure:
         lo = min(g_vals.min(), nc_vals.min()) - 0.02
         hi = max(g_vals.max(), nc_vals.max()) + 0.02
         ax.plot([lo, hi], [lo, hi], '--', color='#aaa', linewidth=0.7)
-        ax.set_xlabel(f'Phase NC  {label}')
-        ax.set_ylabel(f'Phase G  {label}')
+        # Same range on both axes (not just auto-scaled independently) so the
+        # dashed y=x reference line is an actual diagonal, not a distorted one.
+        ax.set_xlim(lo, hi)
+        ax.set_ylim(lo, hi)
+        ax.set_title(label, fontsize=9)
+        ax.set_xlabel('Non-causal  (Phase NC)')
+        ax.set_ylabel('Causal  (Phase G)')
         ax.grid(True)
-    fig.suptitle('Causal (G) vs non-causal (NC) — per speaker  (n=40, ns)', fontsize=9)
+    fig.suptitle('Causal vs non-causal — per speaker  (n=40, ns)', fontsize=9)
     return fig
 
 
@@ -304,9 +353,18 @@ def fig_08_speaker_probe(data: dict) -> plt.Figure:
 
     fig, ax = plt.subplots(figsize=(style.COL1_W, max(2.5, len(spks) * 0.22)))
     ax.barh(spks, recs, 0.7, color=colors, edgecolor='white', linewidth=0.4)
-    ax.axvline(3.125, color='#aaa', linestyle='--', linewidth=0.8, label='Chance (3.1%)')
+    ax.axvline(3.125, color='#aaa', linestyle='--', linewidth=0.8, label='Chance')
     ax.axvline(probe['accuracy'], color=style.PHASE_COLORS['D-Entropy'], linestyle='-',
-               linewidth=0.9, label=f'Mean ({probe["accuracy"]:.1f}%)')
+               linewidth=0.9, label='Mean')
+    # Values shown on the chart itself, next to their line, in the empty
+    # bottom corner (lowest-recall speakers have no/short bars there) —
+    # the legend just needs to say which line is which, not repeat the number.
+    ax.annotate('3.1%', xy=(3.125, 0.015), xycoords=ax.get_xaxis_transform(),
+                xytext=(4, 0), textcoords='offset points',
+                ha='left', va='bottom', fontsize=6.5, color='#888')
+    ax.annotate(f'{probe["accuracy"]:.1f}%', xy=(probe['accuracy'], 0.015),
+                xycoords=ax.get_xaxis_transform(), xytext=(4, 0), textcoords='offset points',
+                ha='left', va='bottom', fontsize=6.5, color=style.PHASE_COLORS['D-Entropy'])
     ax.set_xlabel('Recall (%)')
     ax.set_xlim(0, 115)
     style.legend(fig, ax=ax)
@@ -380,14 +438,6 @@ def fig_12_quant_gap(_data: dict) -> plt.Figure:
         'fig_12 requires float and 3-bit inference against Phase G. '
         'Run scripts/quantisation_gap.py first to produce comparisons/quant_gap/report.txt'
     )
-
-
-# ---------------------------------------------------------------------------
-# fig_13 — R-D curve STOI
-# ---------------------------------------------------------------------------
-
-def fig_13_rd_curve_stoi(data: dict) -> plt.Figure:
-    return _rd_curve(data, metric='stoi')
 
 
 # ---------------------------------------------------------------------------
@@ -601,44 +651,4 @@ def fig_19_music_eval(data: dict) -> plt.Figure:
     fig.suptitle('Music eval — MUSDB18-HQ test set, n=40 tracks\n'
                  'D-VAE: highest compression + lowest quality  (p<0.0001***)',
                  fontsize=8.5)
-    return fig
-
-
-# ---------------------------------------------------------------------------
-# Shared helper
-# ---------------------------------------------------------------------------
-
-def _rd_curve(data: dict, metric: str) -> plt.Figure:
-    rd = data['rd']
-    ours    = rd['ours']
-    encodec = rd['encodec']
-
-    our_kbps  = [r['eff_kbps'] for r in ours]
-    our_vals  = [r[metric]     for r in ours]
-    enc_kbps  = [r['kbps']     for r in encodec]
-    enc_vals  = [r[metric]     for r in encodec]
-    trained_idx = next(i for i, r in enumerate(ours) if r['bits'] == 3)
-
-    ylabel = 'PESQ-WB' if metric == 'pesq' else 'STOI'
-    fig, ax = plt.subplots(figsize=(style.COL1_W, style.ROW_H))
-    ax.plot(our_kbps, our_vals, 'o-', color=style.PHASE_COLORS['G'], linewidth=1.2,
-            markersize=4, label='Ours (Phase G, SQ)')
-    # 1-bit and 2-bit points sit only ~0.2 kbps apart — label them directly so
-    # the pair doesn't read as a single marker.
-    ax.annotate('1-bit', (our_kbps[0], our_vals[0]), textcoords='offset points',
-                xytext=(-8, 7), fontsize=6, ha='right', va='bottom',
-                color=style.PHASE_COLORS['G'])
-    ax.annotate('2-bit', (our_kbps[1], our_vals[1]), textcoords='offset points',
-                xytext=(8, 7), fontsize=6, ha='left', va='bottom',
-                color=style.PHASE_COLORS['G'])
-    ax.scatter([our_kbps[trained_idx]], [our_vals[trained_idx]],
-               color=style.PHASE_COLORS['G'], s=60, zorder=6, marker='*',
-               label=f'Trained (3-bit, {our_kbps[trained_idx]:.1f} kbps)')
-    ax.plot(enc_kbps, enc_vals, 's--', color=style.PHASE_COLORS['D-VAE'], linewidth=1.0,
-            markersize=4, label='EnCodec (RVQ)')
-    ax.set_xlabel('Effective bitrate (kbps)')
-    ax.set_ylabel(ylabel)
-    style.legend(fig, ax=ax)
-    ax.grid(True)
-    ax.set_title(f'Rate-distortion: {ylabel}', fontsize=9)
     return fig
