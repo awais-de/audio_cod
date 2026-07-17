@@ -136,11 +136,14 @@ def fig_03_dim_entropy(data: dict) -> plt.Figure:
     ax.axhline(3.0, color='#aaa', linewidth=0.6, linestyle=':',
                label='Max (3.0 bits = uniform)')
     min_idx = int(np.argmin(vals))
-    ax.annotate(f'dim {min_idx}\n{min(vals):.3f} b',
-                xy=(min_idx, min(vals)),
-                xytext=(min_idx + 2, min(vals) - 0.08),
-                fontsize=6, color=style.PHASE_COLORS['D-VAE'],
-                arrowprops=dict(arrowstyle='->', color=style.PHASE_COLORS['D-VAE'], lw=0.7))
+    # Placed above, in the clear headroom over the bars, rather than off to the
+    # side where it used to overlap neighbouring bars; darker red for contrast
+    # against white (the bar's own salmon fill reads too faint at this size).
+    ax.annotate(f'dim {min_idx}\n{min(vals):.3f} bits',
+                xy=(min_idx, vals[min_idx]),
+                xytext=(min_idx, 1.98),
+                fontsize=6.5, ha='center', va='bottom', color='#a83232',
+                arrowprops=dict(arrowstyle='->', color='#a83232', lw=0.8))
     ax.set_xlabel('Latent dimension index')
     ax.set_ylabel('Shannon entropy (bits)')
     ax.set_title('Per-dimension entropy — Phase G', fontsize=9)
@@ -620,6 +623,14 @@ def _rd_curve(data: dict, metric: str) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(style.COL1_W, style.ROW_H))
     ax.plot(our_kbps, our_vals, 'o-', color=style.PHASE_COLORS['G'], linewidth=1.2,
             markersize=4, label='Ours (Phase G, SQ)')
+    # 1-bit and 2-bit points sit only ~0.2 kbps apart — label them directly so
+    # the pair doesn't read as a single marker.
+    ax.annotate('1-bit', (our_kbps[0], our_vals[0]), textcoords='offset points',
+                xytext=(-8, 7), fontsize=6, ha='right', va='bottom',
+                color=style.PHASE_COLORS['G'])
+    ax.annotate('2-bit', (our_kbps[1], our_vals[1]), textcoords='offset points',
+                xytext=(8, 7), fontsize=6, ha='left', va='bottom',
+                color=style.PHASE_COLORS['G'])
     ax.scatter([our_kbps[trained_idx]], [our_vals[trained_idx]],
                color=style.PHASE_COLORS['G'], s=60, zorder=6, marker='*',
                label=f'Trained (3-bit, {our_kbps[trained_idx]:.1f} kbps)')
