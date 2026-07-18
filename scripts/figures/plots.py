@@ -509,7 +509,7 @@ def fig_17_entropy_ablation(data: dict) -> plt.Figure:
     }
 
     fig, axes = plt.subplots(1, 3, figsize=(style.COL2_W, style.ROW_H),
-                              gridspec_kw={'wspace': 0.32})
+                              gridspec_kw={'wspace': 0.2})
     for ax, metric, label in [
         (axes[0], 'pesq', 'PESQ-WB'),
         (axes[1], 'stoi', 'STOI'),
