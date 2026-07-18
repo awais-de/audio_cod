@@ -170,6 +170,12 @@ def fig_04_entropy_quality(data: dict) -> plt.Figure:
         for p, h, v in zip(phases, entropy, vals):
             c = style.PHASE_COLORS[p]
             ax.scatter(h, v, color=c, s=60, zorder=5, edgecolors='white', linewidths=0.5)
+            # D-VAE sits well clear of the rest of the cluster, so calling
+            # it out directly is free — no risk of the overlap that made
+            # inline labels for every phase a problem below.
+            if p == 'D-VAE':
+                ax.annotate('D-VAE', (h, v), textcoords='offset points', xytext=(6, 4),
+                            fontsize=6.5, color=c, fontweight='bold')
         ax.set_xlabel('Mean H(d) per dimension (bits)')
         ax.set_ylabel(ylabel)
         ax.grid(True)
@@ -423,8 +429,13 @@ def fig_15_dual_entropy(data: dict) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(style.COL1_W, style.ROW_H))
     ax.plot(xr, np.polyval(z, xr), '--', color='#aaa', linewidth=0.8)
     for p, h, r in zip(phases, entropy, ratio):
-        ax.scatter(h, r, color=style.PHASE_COLORS[p], s=60, zorder=5,
-                   edgecolors='white', linewidths=0.5)
+        c = style.PHASE_COLORS[p]
+        ax.scatter(h, r, color=c, s=60, zorder=5, edgecolors='white', linewidths=0.5)
+        # D-VAE sits well clear of the rest of the cluster, so calling it
+        # out directly is free — no overlap risk like the crowded phases.
+        if p == 'D-VAE':
+            ax.annotate('D-VAE', (h, r), textcoords='offset points', xytext=(6, 4),
+                        fontsize=6.5, color=c, fontweight='bold')
     ax.set_xlabel('Mean H(d) per dimension (bits)')
     ax.set_ylabel('zlib compression ratio')
     ax.grid(True)
@@ -470,6 +481,11 @@ def fig_16_multi_coder(data: dict) -> plt.Figure:
     ax.bar(x + w,   bz2,  w, color=c3, label='bz2',   edgecolor='white', linewidth=0.4)
     ax.set_xticks(x)
     ax.set_xticklabels(phases)
+    # D-VAE isn't color-coded here (color is by coder, not phase) — bolding
+    # its tick label is the minimal way to echo the title's callout.
+    for tick_label, p in zip(ax.get_xticklabels(), phases):
+        if p == 'D-VAE':
+            tick_label.set_fontweight('bold')
     ax.set_ylabel('Compression ratio')
     style.legend(fig, ax=ax)
     ax.grid(True, axis='y')
