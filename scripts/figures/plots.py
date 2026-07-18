@@ -87,14 +87,6 @@ def fig_02_rd_curve(data: dict) -> plt.Figure:
 
         ax.plot(our_kbps, our_vals, 'o-', color=style.PHASE_COLORS['G'], linewidth=1.2,
                 markersize=4, label='EntroCodec (Phase G, SQ)')
-        # 1-bit and 2-bit points sit only ~0.2 kbps apart — label them
-        # directly so the pair doesn't read as a single marker.
-        ax.annotate('1-bit', (our_kbps[0], our_vals[0]), textcoords='offset points',
-                    xytext=(-8, 7), fontsize=6, ha='right', va='bottom',
-                    color=style.PHASE_COLORS['G'])
-        ax.annotate('2-bit', (our_kbps[1], our_vals[1]), textcoords='offset points',
-                    xytext=(8, 7), fontsize=6, ha='left', va='bottom',
-                    color=style.PHASE_COLORS['G'])
         ax.scatter([our_kbps[trained_idx]], [our_vals[trained_idx]],
                    color=style.PHASE_COLORS['G'], s=60, zorder=6, marker='*',
                    label=f'Trained (3-bit, {our_kbps[trained_idx]:.1f} kbps)')
@@ -470,19 +462,12 @@ def fig_16_multi_coder(data: dict) -> plt.Figure:
     c3 = style.PHASE_COLORS['D']
 
     fig, ax = plt.subplots(figsize=(style.COL2_W, style.ROW_H))
+    # zlib is the baseline used everywhere else in this analysis (fig_06,
+    # fig_09) — outlined in red; the outline alone is enough to mark it,
+    # no per-phase delta brackets needed on top.
     ax.bar(x - w,   zlib, w, color=c1, label='zlib (baseline)', edgecolor='#c0392b', linewidth=1.4)
     ax.bar(x,       lzma, w, color=c2, label='lzma',  edgecolor='white', linewidth=0.4)
     ax.bar(x + w,   bz2,  w, color=c3, label='bz2',   edgecolor='white', linewidth=0.4)
-    # zlib is the baseline used everywhere else in this analysis (fig_06,
-    # fig_15) — outlined in red, with a flat bracket to bz2 (straight, not a
-    # diagonal connecting two different bar heights) marking the gain the
-    # strongest coder offers over that baseline, for every phase.
-    for xi, (z, l, b) in enumerate(zip(zlib, lzma, bz2)):
-        y_bar = max(z, l, b) + 0.06
-        ax.plot([xi - w, xi - w, xi + w, xi + w], [z, y_bar, y_bar, b],
-                color='#c0392b', linewidth=0.9, zorder=6)
-        ax.text(xi, y_bar + 0.015, f'Δ {b - z:.3f}', ha='center', va='bottom',
-                fontsize=6.5, color='#c0392b')
     ax.set_xticks(x)
     ax.set_xticklabels(phases)
     ax.set_ylabel('Compression ratio')
