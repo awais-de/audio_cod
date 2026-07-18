@@ -758,7 +758,7 @@ def fig_22_latency(data: dict) -> plt.Figure:
                   ha='center', va='bottom', fontsize=7)
     ax1.set_ylabel('Algorithmic delay (ms)')
     ax1.set_ylim(0, max(delay_vals) * 1.5)
-    ax1.set_title('Min. buffering — architecturally comparable', fontsize=8)
+    ax1.set_title('Algorithmic delay', fontsize=8)
     ax1.grid(True, axis='y')
 
     # Right: measured CPU compute latency — the real, unresolved gap
@@ -779,7 +779,7 @@ def fig_22_latency(data: dict) -> plt.Figure:
     ax2.set_xticklabels(metrics)
     ax2.set_ylabel('CPU latency (ms, log scale)')
     ratio_encode = ours['encode_ms'] / enc['encode_ms']
-    ax2.set_title(f'CPU compute — ~{ratio_encode:.0f}× slower (not yet real-time)', fontsize=8)
+    ax2.set_title('CPU compute latency', fontsize=8)
     ax2.grid(True, axis='y', which='both')
 
     style.legend(fig, ax=ax2)
