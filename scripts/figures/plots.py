@@ -89,12 +89,12 @@ def fig_02_rd_curve(data: dict) -> plt.Figure:
         our_vals = [r[metric] for r in ours]
         enc_vals = [r[metric] for r in encodec]
 
-        ax.plot(our_kbps, our_vals, 'o-', color=style.PHASE_COLORS['G'], linewidth=1.2,
+        ax.plot(our_kbps, our_vals, 'o-', color=style.CODEC_COLORS['EntroCodec'], linewidth=1.2,
                 markersize=4, label='EntroCodec (Phase G, SQ)')
         ax.scatter([our_kbps[trained_idx]], [our_vals[trained_idx]],
-                   color=style.PHASE_COLORS['G'], s=60, zorder=6, marker='*',
+                   color=style.CODEC_COLORS['EntroCodec'], s=60, zorder=6, marker='*',
                    label=f'Trained (3-bit, {our_kbps[trained_idx]:.1f} kbps)')
-        ax.plot(enc_kbps, enc_vals, 's--', color=style.PHASE_COLORS['D-VAE'], linewidth=1.0,
+        ax.plot(enc_kbps, enc_vals, 's--', color=style.CODEC_COLORS['EnCodec'], linewidth=1.0,
                 markersize=4, label='EnCodec (RVQ)')
         ax.set_xlabel('Effective bitrate (kbps)')
         ax.set_ylabel(ylabel)
@@ -749,7 +749,7 @@ def fig_21_complexity(data: dict) -> plt.Figure:
     ours, enc = c['ours'], c['encodec']
 
     labels = ['EntroCodec', 'EnCodec']
-    colors = [style.PHASE_COLORS['G'], style.PHASE_COLORS['D-VAE']]
+    colors = [style.CODEC_COLORS['EntroCodec'], style.CODEC_COLORS['EnCodec']]
 
     fig, axes = plt.subplots(1, 2, figsize=(style.COL1_W, style.ROW_H))
     for ax, vals, ylabel, fmt in [
@@ -779,7 +779,7 @@ def fig_21_complexity(data: dict) -> plt.Figure:
 def fig_22_latency(data: dict) -> plt.Figure:
     c = data['complexity']
     ours, enc = c['ours'], c['encodec']
-    colors = [style.PHASE_COLORS['G'], style.PHASE_COLORS['D-VAE']]
+    colors = [style.CODEC_COLORS['EntroCodec'], style.CODEC_COLORS['EnCodec']]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
 
@@ -801,9 +801,9 @@ def fig_22_latency(data: dict) -> plt.Figure:
     enc_vals = [enc['encode_ms'], enc['decode_ms']]
     x = np.arange(2)
     w = 0.35
-    ax2.bar(x - w / 2, ours_vals, w, color=style.PHASE_COLORS['G'],
+    ax2.bar(x - w / 2, ours_vals, w, color=style.CODEC_COLORS['EntroCodec'],
             edgecolor='white', linewidth=0.5, label='EntroCodec')
-    ax2.bar(x + w / 2, enc_vals, w, color=style.PHASE_COLORS['D-VAE'],
+    ax2.bar(x + w / 2, enc_vals, w, color=style.CODEC_COLORS['EnCodec'],
             edgecolor='white', linewidth=0.5, label='EnCodec')
     for xi, (ov, ev) in enumerate(zip(ours_vals, enc_vals)):
         ax2.text(xi - w / 2, ov * 1.15, f'{ov:.0f}', ha='center', va='bottom', fontsize=6.5)

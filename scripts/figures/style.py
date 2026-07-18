@@ -36,6 +36,16 @@ PHASE_COLORS: dict[str, str] = {
     'G-64':      '#003c5a',
 }
 
+# EntroCodec vs EnCodec comparisons (fig_03, fig_04, fig_05) used to borrow
+# PHASE_COLORS['G']/['D-VAE'] (blue/red) — but those two colors now carry a
+# separate meaning elsewhere (blue = normal curriculum phase, red = the
+# D-VAE anomaly), so reusing them here reads as a phase callout by mistake.
+# Dedicated, unrelated hues instead.
+CODEC_COLORS: dict[str, str] = {
+    'EntroCodec': '#2a9d8f',  # teal
+    'EnCodec':    '#d9822b',  # orange
+}
+
 # Curriculum phases in canonical display order
 CORE_PHASES    = ['C', 'D', 'D-VAE', 'E', 'F', 'G']
 THESIS_PHASES  = ['C', 'D', 'D-VAE', 'D-Entropy', 'E', 'F', 'G']
