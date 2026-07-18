@@ -33,7 +33,11 @@ def fig_01_phase_progression(data: dict) -> plt.Figure:
     stoi  = [ci[p]['stoi']    for p in phases]
     s_lo  = [ci[p]['stoi'] - ci[p]['stoi_lo'] for p in phases]
     s_hi  = [ci[p]['stoi_hi'] - ci[p]['stoi'] for p in phases]
-    colors = [style.PHASE_COLORS[p] for p in phases]
+    # C/D/E/F/G all trend the same way through the curriculum — only D-VAE
+    # breaks the pattern, so it's the only phase that needs its own color.
+    # A neutral blue (not gray) — gray reads as "disabled/discarded", which
+    # is the wrong message for phases that are all valid, expected results.
+    colors = [style.PHASE_COLORS['D-VAE'] if p == 'D-VAE' else '#6a9fd8' for p in phases]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
     x = np.arange(len(phases))
@@ -247,7 +251,11 @@ def fig_06_compression(data: dict) -> plt.Figure:
     phases = [p for p in ['C', 'D', 'D-VAE', 'E', 'F', 'G'] if p in comp]
     ratios  = [comp[p]['ratio']    for p in phases]
     kbps    = [comp[p]['eff_kbps'] for p in phases]
-    colors  = [style.PHASE_COLORS[p] for p in phases]
+    # C/D/E/F/G all sit close together — only D-VAE breaks the pattern,
+    # so it's the only phase that needs its own color. A neutral blue,
+    # not gray — gray reads as "disabled/discarded", the wrong message
+    # for phases that are all valid, expected results.
+    colors  = [style.PHASE_COLORS['D-VAE'] if p == 'D-VAE' else '#6a9fd8' for p in phases]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
     x = np.arange(len(phases))
@@ -646,7 +654,11 @@ def fig_19_music_eval(data: dict) -> plt.Figure:
     grp    = music.groupby('phase')
     si_sdr = grp['si_sdr'].mean().reindex(phase_order)
     ratio  = grp['zlib_ratio'].mean().reindex(phase_order)
-    colors = [style.PHASE_COLORS.get(p, '#888888') for p in phase_order]
+    # C/D/G all sit close together — only D-VAE breaks the pattern, so
+    # it's the only phase that needs its own color. A neutral blue, not
+    # gray — gray reads as "disabled/discarded", the wrong message for
+    # phases that are all valid, expected results.
+    colors = [style.PHASE_COLORS['D-VAE'] if p == 'D-VAE' else '#6a9fd8' for p in phase_order]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H),
                                    constrained_layout=True)
@@ -819,7 +831,11 @@ def fig_23_vctk_generalization(data: dict) -> plt.Figure:
     vctk = data['vctk']
     comp, qual, wilcoxon = vctk['compression'], vctk['quality'], vctk['wilcoxon']
     phases = [p for p in ['C', 'D', 'D-VAE', 'G'] if p in comp]
-    colors = [style.PHASE_COLORS[p] for p in phases]
+    # C/D/G all sit close together — only D-VAE breaks the pattern, so
+    # it's the only phase that needs its own color. A neutral blue, not
+    # gray — gray reads as "disabled/discarded", the wrong message for
+    # phases that are all valid, expected results.
+    colors = [style.PHASE_COLORS['D-VAE'] if p == 'D-VAE' else '#6a9fd8' for p in phases]
 
     ratios = [comp[p]['ratio'] for p in phases]
     r_lo = [comp[p]['ratio'] - comp[p]['ratio_lo'] for p in phases]
