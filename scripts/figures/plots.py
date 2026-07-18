@@ -259,6 +259,12 @@ def fig_06_compression(data: dict) -> plt.Figure:
                     f'{v:.2f}', ha='center', va='bottom', fontsize=6.5)
         ax.set_xticks(x)
         ax.set_xticklabels(phases)
+        # D-VAE already has its own color, but bolding the tick label keeps
+        # the callout consistent with how it's marked in the other
+        # entropy-analysis figures (fig_08-10).
+        for tick_label, p in zip(ax.get_xticklabels(), phases):
+            if p == 'D-VAE':
+                tick_label.set_fontweight('bold')
         ax.set_ylabel(ylabel)
         ax.grid(True, axis='y')
     fig.suptitle('Bitstream compression per phase', fontsize=9)
