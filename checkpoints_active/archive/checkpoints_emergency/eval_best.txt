@@ -1,4 +1,0 @@
-checkpoint=/mnt/Data/muaw1874/audio_cod/checkpoints_emergency/best_emergency.pt
-files=10
-PESQ=2.282
-STOI=0.978

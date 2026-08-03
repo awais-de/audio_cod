@@ -45,6 +45,10 @@ training.log
 logs/
 runs/
 
+# checkpoints_active is a symlink to /scratch/muaw1874/checkpoints_active
+# Bulk checkpoint data lives on scratch; metadata lives in checkpoints_metadata/
+checkpoints_active
+
 # OS Files
 .DS_Store
 Thumbs.db

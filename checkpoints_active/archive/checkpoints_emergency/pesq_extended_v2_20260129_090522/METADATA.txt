@@ -1,8 +1,0 @@
-Run Name: pesq_extended_v2_20260129_090522
-Start Time: 2026-01-29 09:36:28
-Initial Checkpoint: checkpoints_emergency/finetuned/best.pt
-Learning Rate: 1e-05
-Batch Size: 4
-Dataset Files: 1500
-Total Epochs: 20
-Best Loss: 0.075020

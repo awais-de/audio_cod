@@ -1,4 +1,0 @@
-checkpoint=/mnt/Data/muaw1874/audio_cod/checkpoints_emergency/checkpoint_epoch_30.pt
-files=10
-PESQ=2.063
-STOI=0.976
