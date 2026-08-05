@@ -8,6 +8,10 @@ assignees: ''
 
 **Parent:** #
 
+## Key finding
+<!-- One sentence. Written after evaluation completes — this is what goes straight into an email. -->
+> _Pending evaluation_
+
 ## Hypothesis
 <!-- What do we expect this specific variant to show, and why -->
 
@@ -34,12 +38,11 @@ assignees: ''
 | STOI |  | 0.756 |  |
 | Latent entropy (bits) |  | ~1.520 |  |
 
-## Key finding
-<!-- One sentence, written first — everything else in this issue supports it -->
-
 ## Artifacts
-- Checkpoint:
-- Plots:
+| Output | Path |
+|---|---|
+| Checkpoint |  |
+| Plots |  |
 
 ## Interpretation
 <!-- What this means for the parent question -->
