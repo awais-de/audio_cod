@@ -17,6 +17,7 @@ Output: comparisons/YYYY-MM-DD_speaker_probe/
   features.npz — latent vectors + labels (for downstream PCA/t-SNE)
 """
 
+import argparse
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -45,11 +46,16 @@ def extract_latent(model, audio: np.ndarray, device) -> np.ndarray:
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Speaker identity linear probe on a frozen encoder.')
+    parser.add_argument('--checkpoint', type=Path, default=None,
+                        help='Model checkpoint (default: best available G→F→C)')
+    args = parser.parse_args()
+
     device    = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    ckpt_path = find_checkpoint(PROJECT_ROOT)
+    ckpt_path = args.checkpoint or find_checkpoint(PROJECT_ROOT)
 
     timestamp = datetime.now().strftime('%Y-%m-%d')
-    out_dir   = PROJECT_ROOT / 'comparisons' / f'{timestamp}_speaker_probe'
+    out_dir   = PROJECT_ROOT / 'comparisons' / f'{timestamp}_speaker_probe_{ckpt_path.parent.name}'
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n{'='*68}")
