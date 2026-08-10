@@ -327,15 +327,17 @@ def fig_08_speaker_probe(data: dict) -> plt.Figure:
     colors = ['#d65f5f' if v == 0 else ('#27ae60' if v == 100 else style.PHASE_COLORS['G'])
               for v in recs]
 
+    chance = 100.0 / len(spks) if spks else 0.0
+
     fig, ax = plt.subplots(figsize=(style.COL1_W, max(2.5, len(spks) * 0.22)))
     ax.barh(spks, recs, 0.7, color=colors, edgecolor='white', linewidth=0.4)
-    ax.axvline(3.125, color='#aaa', linestyle='--', linewidth=0.8, label='Chance')
+    ax.axvline(chance, color='#aaa', linestyle='--', linewidth=0.8, label='Chance')
     ax.axvline(probe['accuracy'], color=style.PHASE_COLORS['D-Entropy'], linestyle='-',
                linewidth=0.9, label='Mean')
     # Values shown on the chart itself, next to their line, in the empty
     # bottom corner (lowest-recall speakers have no/short bars there) —
     # the legend just needs to say which line is which, not repeat the number.
-    ax.annotate('3.1%', xy=(3.125, 0.015), xycoords=ax.get_xaxis_transform(),
+    ax.annotate(f'{chance:.1f}%', xy=(chance, 0.015), xycoords=ax.get_xaxis_transform(),
                 xytext=(4, 0), textcoords='offset points',
                 ha='left', va='bottom', fontsize=6.5, color='#888')
     ax.annotate(f'{probe["accuracy"]:.1f}%', xy=(probe['accuracy'], 0.015),

@@ -174,18 +174,21 @@ def main():
         f"{'Dim':<6}" + ''.join(f"{n:>12}" for n in models),
         sep,
     ]
-    n_dims = 32
+    # Bottleneck width varies across phases (16/32/64-dim variants) -- each
+    # phase's dim_entropy array is only as long as its own bottleneck_dim.
     dim_entropy_per_phase = {}
     for name in models:
         # average dim_entropy across speakers
         arrays = [r[f'{name}_dim_entropy'] for r in all_results
                   if f'{name}_dim_entropy' in r]
-        dim_entropy_per_phase[name] = np.mean(arrays, axis=0) if arrays else np.zeros(n_dims)
+        dim_entropy_per_phase[name] = np.mean(arrays, axis=0) if arrays else np.zeros(0)
+    n_dims = max((len(v) for v in dim_entropy_per_phase.values()), default=0)
 
     for d in range(n_dims):
         row_str = f"  {d:<4}"
         for name in models:
-            row_str += f"{dim_entropy_per_phase[name][d]:>12.3f}"
+            vals = dim_entropy_per_phase[name]
+            row_str += f"{vals[d]:>12.3f}" if d < len(vals) else f"{'--':>12}"
         lines.append(row_str)
 
     lines += [sep, '']
@@ -231,11 +234,15 @@ def main():
                     f"{r[f'{name}_mean_util']:.4f}\n"
                 )
 
-    # Per-dimension entropy CSV
+    # Per-dimension entropy CSV -- phases have different bottleneck widths,
+    # so a dim beyond a phase's own width is written empty, not padded/wrong.
     with open(out_dir / 'dim_entropy.csv', 'w', encoding='utf-8') as f:
         f.write('dim,' + ','.join(models.keys()) + '\n')
         for d in range(n_dims):
-            row_vals = ','.join(f"{dim_entropy_per_phase[n][d]:.4f}" for n in models)
+            row_vals = ','.join(
+                f"{dim_entropy_per_phase[n][d]:.4f}" if d < len(dim_entropy_per_phase[n]) else ''
+                for n in models
+            )
             f.write(f"{d},{row_vals}\n")
 
     print(f"\nreport:      {out_dir}/report.txt")
