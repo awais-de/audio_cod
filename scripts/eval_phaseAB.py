@@ -18,7 +18,7 @@ PROJECT_ROOT = Path('/home/muaw1874/Desktop/ac_proj/audio_cod')
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.paths import get_dataset_paths
-from src.codec_utils import load_model, encode_decode, compute_metrics
+from src.codec_utils import load_model, encode_decode, compute_metrics, PESQ_OK
 
 
 def run_phase(phase_name, ckpt_path, test_files, device, sr=16000, clip_sec=5):
@@ -112,9 +112,10 @@ def main():
         lines.append(f"  {s['phase']:<26} {s['kbps']:>5.2f}k  {pstr}  {s['stoi']:>6.3f}")
     lines.append(sep)
     lines.append('')
-    lines.append('NOTE: PESQ-WB not available on this machine (pesq wheel fails to build).')
-    lines.append('      Run eval_phaseAB.py on the Windows machine to fill in PESQ column.')
-    lines.append('')
+    if not PESQ_OK:
+        lines.append('NOTE: PESQ-WB not available on this machine (pesq wheel fails to build).')
+        lines.append('      Run eval_phaseAB.py where pesq is installed to fill in PESQ column.')
+        lines.append('')
     lines.append('PER-SPEAKER')
     lines.append(sep)
     for phase_name, results in per_speaker_all.items():
