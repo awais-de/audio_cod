@@ -141,7 +141,7 @@ The 20 CP research project is complete. The MS thesis (30 CP) extends it by test
 
 | # | Experiment | What it tests | Status |
 |---|---|---|---|
-| 1 | Soft entropy penalty training (D-Entropy) | Coupling holds under a second independent mechanism — not VAE-specific | **Closed.** D-Entropy vs D: ΔPESQ=−0.070, ΔSTOI=−0.057, p<0.0001*** (n=40). Larger effect than D-VAE. |
+| 1 | Soft entropy penalty training (D-Entropy) | Coupling holds under a second independent mechanism — not VAE-specific | **Closed.** D-Entropy vs D: ΔPESQ=−0.071, ΔSTOI=−0.057, p<0.0001*** (n=40, genuine — see issue #10). Larger effect than D-VAE. |
 | 2 | Music evaluation — MUSDB18-HQ, SI-SDR | Modality independence — coupling holds beyond speech | **Closed.** D-VAE = highest compression (1.440×) + lowest SI-SDR (−7.35 dB) on 40 tracks. D-VAE vs D p<0.0001*** on both metrics. |
 | 3 | Bottleneck width ablation (16 / 64 dims) | Coupling holds regardless of latent width | **Partially closed.** Full A→G curricula at 16-dim and 64-dim confirm quality ordering. D-VAE ablation at those widths pending. |
 | 4 | VQ comparison (replace SQ with RVQ, same encoder) | Coupling holds regardless of quantizer class — not SQ-specific | **Not started.** Requires a full RVQ curriculum from scratch. This is the strongest remaining open objection to the generality of the coupling claim. |
@@ -150,7 +150,7 @@ The 20 CP research project is complete. The MS thesis (30 CP) extends it by test
 
 | Item | What is needed |
 |---|---|
-| Phase A/B PESQ | Run `scripts/eval_phaseAB.py` on Windows (~30 min); PESQ wheel cannot build on this Linux machine. |
+| Phase A/B PESQ | **Resolved.** `pesq` now builds via a local conda env with its own Python headers (no Windows needed) — see issue #20. Phase A: 1.181 PESQ-WB / 0.529 STOI; Phase B: 1.280 PESQ-WB / 0.557 STOI. |
 | Phase G canonical entropy | Pick one value: 1.520 bits (5-speaker canonical set, 2026-06-30) vs 1.5944 bits (4-speaker recompute, 2026-07-07). Recommend 5-speaker set for consistency with all other headline numbers. |
 | Bitrate standardisation | 5.87 kbps (2026-07-01 eval, speaker 121 present) vs 5.97 kbps (OOD eval, speaker 1320 substituted). Use a consistent speaker set throughout. |
 
