@@ -147,13 +147,16 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Same 5 speakers as the 2026-06-30 baseline ──────────────────────────
+    # Fixed set, not "first 5 by traversal" -- adding/removing dataset speaker
+    # dirs silently changes traversal order and breaks comparability.
+    TARGET_SPEAKERS = {'1089', '1188', '1221', '1284', '1320'}
     paths    = get_dataset_paths()
     speakers = {}
     for f in sorted(paths['test_clean'].rglob('*.flac')):
         spk = f.parts[-3]
-        if spk not in speakers:
+        if spk in TARGET_SPEAKERS and spk not in speakers:
             speakers[spk] = f
-        if len(speakers) == 5:
+        if len(speakers) == len(TARGET_SPEAKERS):
             break
     test_files = list(speakers.values())
     spk_ids    = [f.parts[-3] for f in test_files]

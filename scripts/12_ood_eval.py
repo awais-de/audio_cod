@@ -113,13 +113,18 @@ def main():
     model, _ = load_model(ckpt_path, device)
     model.eval()
 
+    # Fixed canonical 5-speaker set (matches eval_phaseAB.py / eval_paper_numbers.py).
+    # Do NOT use "first N found by directory traversal" -- adding/removing speaker
+    # dirs from the dataset silently changes which N get picked (path string sort,
+    # not speaker ID), breaking comparability across runs.
+    TARGET_SPEAKERS = {'1089', '1188', '1221', '1284', '1320'}
     paths = get_dataset_paths()
     speakers = {}
     for f in sorted(paths['test_clean'].rglob('*.flac')):
         spk = f.parts[-3]
-        if spk not in speakers:
+        if spk in TARGET_SPEAKERS and spk not in speakers:
             speakers[spk] = f
-        if len(speakers) == N_SPKRS:
+        if len(speakers) == min(N_SPKRS, len(TARGET_SPEAKERS)):
             break
     speech_files = list(speakers.values())
 

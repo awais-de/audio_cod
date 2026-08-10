@@ -14,17 +14,38 @@ import pandas as pd
 # Public entry point
 # ---------------------------------------------------------------------------
 
+def _latest(comp: Path, pattern: str) -> Path | None:
+    """Most recent directory matching pattern (date-prefixed dirs sort lexicographically)."""
+    dirs = sorted(comp.glob(pattern), reverse=True)
+    return dirs[0] if dirs else None
+
+
 def load_all(project_root: Path) -> dict:
     comp = project_root / 'comparisons'
     data: dict = {}
 
-    _try(data, 'metrics',      _load_metrics_csv,    comp / '2026-07-17_confidence_intervals' / 'metrics.csv')
-    _try(data, ('ci', 'wilcoxon'), _load_ci_report,  comp / '2026-07-17_confidence_intervals' / 'report.txt')
-    _try(data, ('compression', 'per_dim_h'), _load_compression, comp / '2026-06-30_compression_analysis' / 'report.txt')
+    # These get re-run whenever the dataset/checkpoints change (see #43/#44/#41) —
+    # always load the latest run, not a pinned date, so stale data can't get
+    # silently baked into figures again.
+    ci_dir = _latest(comp, '*_confidence_intervals')
+    if ci_dir:
+        _try(data, 'metrics',          _load_metrics_csv, ci_dir / 'metrics.csv')
+        _try(data, ('ci', 'wilcoxon'), _load_ci_report,   ci_dir / 'report.txt')
+
+    compression_dir = _latest(comp, '*_compression_analysis')
+    if compression_dir:
+        _try(data, ('compression', 'per_dim_h'), _load_compression, compression_dir / 'report.txt')
+
+    # The canonical speaker-leakage figure is specifically about Phase G.
+    probe_dir = _latest(comp, '*_speaker_probe_temporal_phaseG') or _latest(comp, '*_speaker_probe')
+    if probe_dir:
+        _try(data, 'speaker_probe', _load_speaker_probe, probe_dir / 'report.txt')
+
+    # One-off historical snapshots, evaluated on the fixed canonical 5-speaker
+    # set (unaffected by dataset completeness) -- pinned dates are fine here.
     _try(data, 'rd',           _load_rd_sweep,        comp / '2026-07-01_rd_sweep' / 'report.txt')
     _try(data, 'multi_coder',  _load_multi_coder,     comp / '2026-07-10_multi_coder' / 'report.txt')
     _try(data, 'ood',          _load_ood,             comp / '2026-07-01_ood_eval' / 'report.txt')
-    _try(data, 'speaker_probe',_load_speaker_probe,   comp / '2026-07-01_speaker_probe' / 'report.txt')
     _try(data, 'corruption',   _load_corruption,      comp / '2026-07-01_corruption_test' / 'report.txt')
     _try(data, 'complexity',   _load_complexity,      comp / '2026-07-18_complexity_latency' / 'report.txt')
     _try(data, 'vctk',         _load_second_dataset,  comp / '2026-07-10_second_dataset' / 'report.txt')
