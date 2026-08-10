@@ -564,6 +564,15 @@ def fig_17_entropy_ablation(data: dict) -> plt.Figure:
 
 def fig_18_channel_ablation(data: dict) -> plt.Figure:
     ci = data['ci']
+    wilcoxon = data.get('wilcoxon', [])
+
+    def _p_str(contrast: str, metric: str = 'PESQ-WB') -> str:
+        for r in wilcoxon:
+            if r['contrast'] == contrast and r['metric'] == metric:
+                pv = r['p_value']
+                op = '<' if pv.startswith('<') else '='
+                return f'p{op}{pv.lstrip("<")}{r["sig"]}'
+        return 'n/a'
 
     # Full progression for each width
     widths = {
@@ -634,7 +643,7 @@ def fig_18_channel_ablation(data: dict) -> plt.Figure:
     style.legend(fig, handles=legend_handles, labels=legend_labels, ncol=3)
 
     fig.suptitle('Bottleneck width vs quality, relative to the 32-dim baseline\n'
-                 '(G-16 vs G: p<0.0001***;  G-64 vs G: p=0.006**;  n=40)',
+                 f'(G-16 vs G: {_p_str("G-16 vs G")};  G-64 vs G: {_p_str("G-64 vs G")};  n=40)',
                  fontsize=8.5)
     return fig
 
