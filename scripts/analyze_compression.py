@@ -32,6 +32,11 @@ PHASES = {
     'phaseE':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseE/best.pt',
     'phaseF':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseF/best.pt',
     'phaseG':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseG/best.pt',
+    # MS Thesis — D-VAE entropy-quality coupling at other widths (#41)
+    'phaseD16':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_16/best.pt',
+    'phaseDvae16': PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_16/best.pt',
+    'phaseD64':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_64/best.pt',
+    'phaseDvae64': PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_64/best.pt',
 }
 
 CLIP_SEC = 5

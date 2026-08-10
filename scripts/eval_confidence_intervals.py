@@ -70,6 +70,9 @@ PHASES = [
     ('E-64',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseE_64/best.pt'),
     ('F-64',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseF_64/best.pt'),
     ('G-64',      PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_64/best.pt'),
+    # MS Thesis — D-VAE entropy-quality coupling at other widths (#41)
+    ('D-VAE-16',  PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_16/best.pt'),
+    ('D-VAE-64',  PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_64/best.pt'),
 ]
 
 # Contrasts for Wilcoxon signed-rank tests.
@@ -86,6 +89,9 @@ CONTRASTS = [
     # MS Thesis: channel width — within-width progression (base vs best)
     ('G-16 vs C-16',   'G-16',      'C-16',    '16-dim: full curriculum gain (same pattern as 32-dim?)'),
     ('G-64 vs C-64',   'G-64',      'C-64',    '64-dim: full curriculum gain (same pattern as 32-dim?)'),
+    # MS Thesis: does the D-VAE entropy-quality coupling hold at other widths? (#41)
+    ('D-VAE-16 vs D-16', 'D-VAE-16', 'D-16',   'KL penalty at 16-dim: does entropy drop come with quality drop?'),
+    ('D-VAE-64 vs D-64', 'D-VAE-64', 'D-64',   'KL penalty at 64-dim: does entropy drop come with quality drop?'),
 ]
 
 
