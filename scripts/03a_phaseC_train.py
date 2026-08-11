@@ -56,6 +56,7 @@ def train(args):
     temporal_stride = ckpt.get('temporal_stride', 20)
 
     model = NeuralAudioCodec(
+        fixed_window_mask=args.fixed_window_mask,
         d_model=d_model, n_layers=n_layers, n_heads=n_heads,
         window_size=window_size, dropout=0.0,
         bottleneck_dim=bottleneck_dim, temporal_stride=temporal_stride,
@@ -136,6 +137,7 @@ def train(args):
                 'train_loss': avg_loss,
                 'real_bitrate_kbps': real_kbps,
                 'qat': True, 'num_bits': 3,
+                'fixed_window_mask': args.fixed_window_mask,
                 'phase': 'C',
             }, args.output / 'best.pt')
             print(f"  Saved best checkpoint")
@@ -148,6 +150,7 @@ def train(args):
                 'window_size': window_size,
                 'bottleneck_dim': bottleneck_dim,
                 'temporal_stride': temporal_stride,
+                'fixed_window_mask': args.fixed_window_mask,
                 'phase': 'C',
             }, args.output / f'epoch_{epoch+1:02d}.pt')
 
@@ -169,6 +172,8 @@ def main():
     parser.add_argument('--data-root', type=Path, default=paths['train_clean_100'])
     parser.add_argument('--output', type=Path,
                         default=PROJECT_ROOT / 'checkpoints_active/temporal_phaseC')
+    parser.add_argument('--fixed-window-mask', action='store_true',
+                        help='Use the corrected attention window mask (README Known Limitations / #27)')
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--lr', type=float, default=5e-6)
     parser.add_argument('--batch-size', type=int, default=1)

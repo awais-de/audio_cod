@@ -57,6 +57,7 @@ def load_model(ckpt_path: Path, device):
         dropout=0.0,
         bottleneck_dim=ckpt.get('bottleneck_dim', 32),
         temporal_stride=ckpt.get('temporal_stride', 20),
+        fixed_window_mask=ckpt.get('fixed_window_mask', False),
     ).to(device)
     model.load_state_dict(state)
     model.eval()

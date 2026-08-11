@@ -27,7 +27,7 @@ class CausalConv1d(nn.Module):
 
 class CausalAttention(nn.Module):
     """Sliding-window causal attention for low latency"""
-    def __init__(self, d_model, n_heads, window_size=256, dropout=0.1):
+    def __init__(self, d_model, n_heads, window_size=256, dropout=0.1, fixed_window_mask=False):
         super().__init__()
         assert d_model % n_heads == 0
 
@@ -35,6 +35,13 @@ class CausalAttention(nn.Module):
         self.n_heads = n_heads
         self.d_k = d_model // n_heads
         self.window_size = window_size
+        # See README "Known Limitations": the window mask below was a no-op
+        # (torch.triu masked future positions, already covered by causal_mask,
+        # instead of past positions beyond the window) for every checkpoint
+        # trained before this flag existed. Defaults to False so existing
+        # checkpoints keep running inference exactly as they were trained --
+        # only checkpoints explicitly trained with the fix set this True.
+        self.fixed_window_mask = fixed_window_mask
 
         self.qkv = nn.Linear(d_model, 3 * d_model)
         self.out_proj = nn.Linear(d_model, d_model)
@@ -56,8 +63,15 @@ class CausalAttention(nn.Module):
         causal_mask = torch.triu(torch.ones(seq_len, seq_len, device=device), diagonal=1).bool()
 
         if self.window_size is not None and seq_len > self.window_size:
-            window_mask = torch.triu(torch.ones(seq_len, seq_len, device=device),
-                                     diagonal=self.window_size + 1).bool()
+            if self.fixed_window_mask:
+                # Correct: mask positions more than window_size steps in the past.
+                window_mask = torch.tril(torch.ones(seq_len, seq_len, device=device),
+                                         diagonal=-(self.window_size + 1)).bool()
+            else:
+                # Original bug, preserved for backward compatibility with
+                # checkpoints trained under it (see fixed_window_mask above).
+                window_mask = torch.triu(torch.ones(seq_len, seq_len, device=device),
+                                         diagonal=self.window_size + 1).bool()
             causal_mask = causal_mask | window_mask
 
         # -1e4 avoids fp16 overflow on masked positions
@@ -73,12 +87,12 @@ class CausalAttention(nn.Module):
 
 class TransformerBlock(nn.Module):
     """Transformer block with causal attention and feed-forward network"""
-    def __init__(self, d_model, n_heads, d_ff=None, window_size=256, dropout=0.1):
+    def __init__(self, d_model, n_heads, d_ff=None, window_size=256, dropout=0.1, fixed_window_mask=False):
         super().__init__()
         if d_ff is None:
             d_ff = 4 * d_model
 
-        self.attention = CausalAttention(d_model, n_heads, window_size, dropout)
+        self.attention = CausalAttention(d_model, n_heads, window_size, dropout, fixed_window_mask)
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
 
@@ -106,7 +120,8 @@ class AudioEncoder(nn.Module):
         n_layers=4,
         n_heads=8,
         window_size=256,
-        dropout=0.1
+        dropout=0.1,
+        fixed_window_mask=False
     ):
         super().__init__()
 
@@ -138,7 +153,8 @@ class AudioEncoder(nn.Module):
         ])
 
         self.transformer_blocks = nn.ModuleList([
-            TransformerBlock(d_model, n_heads, window_size=window_size, dropout=dropout)
+            TransformerBlock(d_model, n_heads, window_size=window_size, dropout=dropout,
+                             fixed_window_mask=fixed_window_mask)
             for _ in range(n_layers)
         ])
 
@@ -167,7 +183,8 @@ class AudioDecoder(nn.Module):
         n_layers=4,
         n_heads=8,
         window_size=256,
-        dropout=0.1
+        dropout=0.1,
+        fixed_window_mask=False
     ):
         super().__init__()
 
@@ -176,7 +193,8 @@ class AudioDecoder(nn.Module):
         self.d_model = d_model
 
         self.transformer_blocks = nn.ModuleList([
-            TransformerBlock(d_model, n_heads, window_size=window_size, dropout=dropout)
+            TransformerBlock(d_model, n_heads, window_size=window_size, dropout=dropout,
+                             fixed_window_mask=fixed_window_mask)
             for _ in range(n_layers)
         ])
 
@@ -244,11 +262,13 @@ class NeuralAudioCodec(nn.Module):
         dropout=0.1,
         bottleneck_dim=None,
         temporal_stride=1,
+        fixed_window_mask=False,
     ):
         super().__init__()
 
         self.bottleneck_dim = bottleneck_dim
         self.temporal_stride = temporal_stride
+        self.fixed_window_mask = fixed_window_mask
 
         self.encoder = AudioEncoder(
             sample_rate=sample_rate,
@@ -257,7 +277,8 @@ class NeuralAudioCodec(nn.Module):
             n_layers=n_layers,
             n_heads=n_heads,
             window_size=window_size,
-            dropout=dropout
+            dropout=dropout,
+            fixed_window_mask=fixed_window_mask
         )
 
         self.decoder = AudioDecoder(
@@ -267,7 +288,8 @@ class NeuralAudioCodec(nn.Module):
             n_layers=n_layers,
             n_heads=n_heads,
             window_size=window_size,
-            dropout=dropout
+            dropout=dropout,
+            fixed_window_mask=fixed_window_mask
         )
 
         # Spatial bottleneck (d_model ↔ bottleneck_dim)
