@@ -151,8 +151,8 @@ The 20 CP research project is complete. The MS thesis (30 CP) extends it by test
 | Item | What is needed |
 |---|---|
 | Phase A/B PESQ | **Resolved.** `pesq` now builds via a local conda env with its own Python headers (no Windows needed) — see issue #20. Phase A: 1.181 PESQ-WB / 0.529 STOI; Phase B: 1.280 PESQ-WB / 0.557 STOI. |
-| Phase G canonical entropy | Pick one value: 1.520 bits (5-speaker canonical set, 2026-06-30) vs 1.5944 bits (4-speaker recompute, 2026-07-07). Recommend 5-speaker set for consistency with all other headline numbers. |
-| Bitrate standardisation | 5.87 kbps (2026-07-01 eval, speaker 121 present) vs 5.97 kbps (OOD eval, speaker 1320 substituted). Use a consistent speaker set throughout. |
+| Phase G canonical entropy | **Resolved.** 1.520 bits (5-speaker canonical set) — used consistently for all headline numbers; the 1.5944-bit (4-speaker recompute) figure is superseded. |
+| Bitrate standardisation | **Resolved.** 5.89 kbps is canonical (n=40, genuine — see #10), superseding the earlier 5.87/5.97 kbps ambiguity from inconsistent speaker sets. |
 
 ---
 
