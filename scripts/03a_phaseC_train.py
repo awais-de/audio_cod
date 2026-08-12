@@ -24,7 +24,7 @@ from tqdm import tqdm
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.model import NeuralAudioCodec
+from src.model import NeuralAudioCodec, build_codec
 from src.paths import get_dataset_paths
 from src.losses import (
     ste_quantize_3bit, multi_scale_stft_loss, NoisyAudioDataset, measure_real_bitrate
@@ -55,7 +55,8 @@ def train(args):
     bottleneck_dim = ckpt.get('bottleneck_dim', 32)
     temporal_stride = ckpt.get('temporal_stride', 20)
 
-    model = NeuralAudioCodec(
+    model = build_codec(
+        non_causal=args.non_causal,
         fixed_window_mask=args.fixed_window_mask,
         d_model=d_model, n_layers=n_layers, n_heads=n_heads,
         window_size=window_size, dropout=0.0,
@@ -138,6 +139,7 @@ def train(args):
                 'real_bitrate_kbps': real_kbps,
                 'qat': True, 'num_bits': 3,
                 'fixed_window_mask': args.fixed_window_mask,
+                'non_causal': args.non_causal,
                 'phase': 'C',
             }, args.output / 'best.pt')
             print(f"  Saved best checkpoint")
@@ -151,6 +153,7 @@ def train(args):
                 'bottleneck_dim': bottleneck_dim,
                 'temporal_stride': temporal_stride,
                 'fixed_window_mask': args.fixed_window_mask,
+                'non_causal': args.non_causal,
                 'phase': 'C',
             }, args.output / f'epoch_{epoch+1:02d}.pt')
 
@@ -174,6 +177,8 @@ def main():
                         default=PROJECT_ROOT / 'checkpoints_active/temporal_phaseC')
     parser.add_argument('--fixed-window-mask', action='store_true',
                         help='Use the corrected attention window mask (README Known Limitations / #27)')
+    parser.add_argument('--non-causal', action='store_true',
+                        help='Use the non-causal (bidirectional) architecture -- full curriculum ablation, #27')
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--lr', type=float, default=5e-6)
     parser.add_argument('--batch-size', type=int, default=1)

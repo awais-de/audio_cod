@@ -361,3 +361,16 @@ class NeuralAudioCodec(nn.Module):
         """
         z = self.encode(x)
         return self.decode(z)
+
+
+def build_codec(non_causal=False, fixed_window_mask=False, **kwargs):
+    """Construct NeuralAudioCodec or NonCausalNeuralAudioCodec from the same
+    kwargs. State-dict keys are structurally identical between the two (see
+    src/model_noncausal.py), so training scripts can share one call site
+    regardless of which curriculum (causal or non-causal ablation) they're
+    running -- only the forward pass differs.
+    """
+    if non_causal:
+        from src.model_noncausal import NonCausalNeuralAudioCodec
+        return NonCausalNeuralAudioCodec(**kwargs)
+    return NeuralAudioCodec(fixed_window_mask=fixed_window_mask, **kwargs)

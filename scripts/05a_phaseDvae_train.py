@@ -34,7 +34,7 @@ from tqdm import tqdm
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.model import NeuralAudioCodec
+from src.model import NeuralAudioCodec, build_codec
 from src.paths import get_dataset_paths
 from src.losses import multi_scale_stft_loss, NoisyAudioDataset, measure_real_bitrate
 
@@ -99,7 +99,8 @@ def train(args):
     bottleneck_dim  = ckpt.get('bottleneck_dim', 32)
     temporal_stride = ckpt.get('temporal_stride', 20)
 
-    model = NeuralAudioCodec(
+    model = build_codec(
+        non_causal=args.non_causal,
         fixed_window_mask=args.fixed_window_mask,
         d_model=d_model, n_layers=n_layers, n_heads=n_heads,
         window_size=window_size, dropout=0.0,
@@ -215,6 +216,7 @@ def train(args):
                 'kl_loss': avg_kl,
                 'real_bitrate_kbps': real_kbps,
                 'fixed_window_mask': args.fixed_window_mask,
+                'non_causal': args.non_causal,
                 'phase': 'D-VAE',
             }, args.output / 'best.pt')
             print(f"  Saved best checkpoint (recon={avg_recon:.5f})")
@@ -229,6 +231,7 @@ def train(args):
                 'bottleneck_dim': bottleneck_dim,
                 'temporal_stride': temporal_stride,
                 'fixed_window_mask': args.fixed_window_mask,
+                'non_causal': args.non_causal,
                 'phase': 'D-VAE',
             }, args.output / f'epoch_{epoch+1:02d}.pt')
 
@@ -257,6 +260,8 @@ def main():
                         default=PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae')
     parser.add_argument('--fixed-window-mask', action='store_true',
                         help='Use the corrected attention window mask (README Known Limitations / #27)')
+    parser.add_argument('--non-causal', action='store_true',
+                        help='Use the non-causal (bidirectional) architecture -- full curriculum ablation, #27')
     parser.add_argument('--epochs',           type=int,   default=20)
     parser.add_argument('--lr',               type=float, default=1e-5)
     parser.add_argument('--kl-max',           type=float, default=0.01,

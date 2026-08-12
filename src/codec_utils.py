@@ -7,6 +7,7 @@ import torch
 import zlib
 
 from src.model import NeuralAudioCodec
+from src.model_noncausal import NonCausalNeuralAudioCodec
 
 try:
     from pesq import pesq as pesq_fn
@@ -49,7 +50,7 @@ def load_model(ckpt_path: Path, device):
             if len(p) > 2 and p[2].isdigit():
                 ids.add(int(p[2]))
     n_layers = max(ids) + 1 if ids else 6
-    model = NeuralAudioCodec(
+    common_kwargs = dict(
         d_model=d_model,
         n_layers=n_layers,
         n_heads=ckpt.get('n_heads', 8),
@@ -57,8 +58,18 @@ def load_model(ckpt_path: Path, device):
         dropout=0.0,
         bottleneck_dim=ckpt.get('bottleneck_dim', 32),
         temporal_stride=ckpt.get('temporal_stride', 20),
-        fixed_window_mask=ckpt.get('fixed_window_mask', False),
-    ).to(device)
+    )
+    if ckpt.get('non_causal', False):
+        # State-dict keys are structurally identical to NeuralAudioCodec (see
+        # src/model_noncausal.py), but the forward pass differs -- loading a
+        # non-causal checkpoint into the causal class would run silently
+        # without error while evaluating the wrong (masked) forward pass.
+        model = NonCausalNeuralAudioCodec(**common_kwargs).to(device)
+    else:
+        model = NeuralAudioCodec(
+            **common_kwargs,
+            fixed_window_mask=ckpt.get('fixed_window_mask', False),
+        ).to(device)
     model.load_state_dict(state)
     model.eval()
     return model, ckpt
