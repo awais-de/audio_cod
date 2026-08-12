@@ -73,6 +73,16 @@ PHASES = [
     # MS Thesis — D-VAE entropy-quality coupling at other widths (#41)
     ('D-VAE-16',  PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_16/best.pt'),
     ('D-VAE-64',  PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_64/best.pt'),
+    # Attention window fix (#27/#28/#29) — corrected 200-frame causal window,
+    # 32-dim, retrained end to end. Originals above are untouched for comparison.
+    ('C-fixed',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseC_fixed/best.pt'),
+    ('D-fixed',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_fixed/best.pt'),
+    ('D-VAE-fixed',     PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_fixed/best.pt'),
+    ('D-Entropy-fixed', PROJECT_ROOT / 'checkpoints_active/temporal_phaseEntropy_fixed/best.pt'),
+    ('E-fixed',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseE_fixed/best.pt'),
+    ('F-fixed',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseF_fixed/best.pt'),
+    ('G-fixed',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_fixed/best.pt'),
+    ('NC-fixed',        PROJECT_ROOT / 'checkpoints_active/temporal_phaseNC_fixed/best.pt'),
 ]
 
 # Contrasts for Wilcoxon signed-rank tests.
@@ -92,6 +102,12 @@ CONTRASTS = [
     # MS Thesis: does the D-VAE entropy-quality coupling hold at other widths? (#41)
     ('D-VAE-16 vs D-16', 'D-VAE-16', 'D-16',   'KL penalty at 16-dim: does entropy drop come with quality drop?'),
     ('D-VAE-64 vs D-64', 'D-VAE-64', 'D-64',   'KL penalty at 64-dim: does entropy drop come with quality drop?'),
+    # Attention window fix (#27/#28/#29): how much do corrected numbers actually
+    # move, and does the core coupling claim survive under the real fix?
+    ('G-fixed vs G',            'G-fixed',     'G',       'corrected 200-frame window vs the original triu/tril bug'),
+    ('NC-fixed vs G-fixed',     'NC-fixed',    'G-fixed', 'causality ablation redone under the corrected window'),
+    ('D-VAE-fixed vs D-fixed',  'D-VAE-fixed', 'D-fixed', 'KL penalty coupling under the corrected window -- still holds?'),
+    ('D-Entr-fixed vs D-fixed', 'D-Entropy-fixed', 'D-fixed', 'soft entropy penalty coupling under the corrected window'),
 ]
 
 
