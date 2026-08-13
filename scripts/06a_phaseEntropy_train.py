@@ -45,7 +45,7 @@ from tqdm import tqdm
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.model import NeuralAudioCodec, build_codec
+from src.model import build_codec
 from src.paths import get_dataset_paths
 from src.losses import multi_scale_stft_loss, NoisyAudioDataset, measure_real_bitrate
 

@@ -32,7 +32,6 @@ from pathlib import Path
 
 import numpy as np
 import soundfile as sf
-import torch
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))

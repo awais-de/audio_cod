@@ -29,7 +29,6 @@ def inspect(path: Path, show_chunks: bool = True):
         duration   = n_samples / sr
         chunk_sec  = chunk_samples / sr
         pcm_bytes  = n_samples * 2          # 16-bit PCM equivalent
-        total_bits = (file_size - HEADER.size) * 8
         kbps       = (file_size * 8) / duration / 1000
 
         print(f"\n=== {path.name} ===")

@@ -118,7 +118,6 @@ def main():
 
     print(f"\n{'─'*60}")
     print("Coupling check (does H track quality across widths?):")
-    vals = list(results.values())
     h_order    = sorted(results.keys(), key=lambda k: results[k]['H'])
     stoi_order = sorted(results.keys(), key=lambda k: results[k]['stoi'])
     if h_order == stoi_order:

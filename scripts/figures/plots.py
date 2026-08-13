@@ -247,7 +247,6 @@ def fig_05_ood(data: dict) -> plt.Figure:
 
 def fig_06_compression(data: dict) -> plt.Figure:
     comp = data['compression']
-    ci   = data.get('ci', {})
     phases = [p for p in ['C', 'D', 'D-VAE', 'E', 'F', 'G'] if p in comp]
     ratios  = [comp[p]['ratio']    for p in phases]
     kbps    = [comp[p]['eff_kbps'] for p in phases]

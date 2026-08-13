@@ -21,7 +21,6 @@ Output: checkpoints_active/temporal_phaseNC/
 import sys
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 
 import torch

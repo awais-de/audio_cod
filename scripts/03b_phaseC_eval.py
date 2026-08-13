@@ -33,7 +33,6 @@ from src.codec_utils import load_model, compute_metrics
 
 try:
     from encodec import EncodecModel
-    from encodec.utils import convert_audio
     ENCODEC_AVAILABLE = True
 except ImportError:
     ENCODEC_AVAILABLE = False
@@ -104,7 +103,6 @@ def encodec_encode_decode(audio_np, sr, bandwidth_kbps, device):
     # Measure bitrate from encoded frames
     total_codes = sum(codes.numel() for codes, _ in encoded_frames)
     # Each code index uses log2(codebook_size) bits
-    n_codebooks = encoded_frames[0][0].shape[1]
     bits_per_code = np.log2(model.quantizer.bins)
     duration = len(audio_np) / sr
     actual_kbps = (total_codes * bits_per_code) / duration / 1000
@@ -172,7 +170,6 @@ def main():
     CLIP_SEC = 5
     ENCODEC_BANDWIDTHS = [1.5, 3.0, 6.0]
 
-    from datetime import datetime
     timestamp = datetime.now().strftime('%Y-%m-%d')
     out_dir = PROJECT_ROOT / 'comparisons' / f'{timestamp}_phaseC_aac_vs_encodec_vs_nacodec'
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -5,16 +5,14 @@ Same 5-speaker, 5-second test set as all 2026-07-01 comparisons.
 """
 
 import sys
-import zlib
 import csv
 from pathlib import Path
 from datetime import datetime
 
 import numpy as np
 import soundfile as sf
-import torch
 
-PROJECT_ROOT = Path('/home/muaw1874/Desktop/ac_proj/audio_cod')
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.paths import get_dataset_paths

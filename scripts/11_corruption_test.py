@@ -19,7 +19,6 @@ Output: comparisons/YYYY-MM-DD_corruption_test/
 
 import sys
 import zlib
-import struct
 from datetime import datetime
 from pathlib import Path
 
@@ -31,7 +30,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.paths import get_dataset_paths
-from src.codec_utils import load_model, find_checkpoint, compute_metrics, avg
+from src.codec_utils import load_model, find_checkpoint, compute_metrics
 
 SR           = 16000
 CLIP_SEC     = 5

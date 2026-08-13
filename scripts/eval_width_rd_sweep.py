@@ -14,7 +14,6 @@ Output: comparisons/YYYY-MM-DD_rd_sweep_<label>/
 
 import argparse
 import csv
-import math
 import sys
 import zlib
 from datetime import datetime
