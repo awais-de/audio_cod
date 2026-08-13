@@ -251,10 +251,7 @@ def fig_06_compression(data: dict) -> plt.Figure:
     phases = [p for p in ['C', 'D', 'D-VAE', 'E', 'F', 'G'] if p in comp]
     ratios  = [comp[p]['ratio']    for p in phases]
     kbps    = [comp[p]['eff_kbps'] for p in phases]
-    # C/D/E/F/G all sit close together — only D-VAE breaks the pattern,
-    # so it's the only phase that needs its own color. A neutral blue,
-    # not gray — gray reads as "disabled/discarded", the wrong message
-    # for phases that are all valid, expected results.
+    # D-VAE is the only outlier here; neutral blue for the rest (see fig_01).
     colors  = [style.PHASE_COLORS['D-VAE'] if p == 'D-VAE' else '#6a9fd8' for p in phases]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
@@ -447,23 +444,18 @@ def fig_15_dual_entropy(data: dict) -> plt.Figure:
     for p, h, r in zip(phases, entropy, ratio):
         c = style.PHASE_COLORS[p]
         ax.scatter(h, r, color=c, s=60, zorder=5, edgecolors='white', linewidths=0.5)
-        # D-VAE sits well clear of the rest of the cluster, so calling it
-        # out directly is free — no overlap risk like the crowded phases.
         if p == 'D-VAE':
             ax.annotate('D-VAE', (h, r), textcoords='offset points', xytext=(6, 4),
                         fontsize=6.5, color=c, fontweight='bold')
     ax.set_xlabel('Mean H(d) per dimension (bits)')
     ax.set_ylabel('zlib compression ratio')
     ax.grid(True)
-    # Compute and display Pearson r
     r_val = np.corrcoef(entropy, ratio)[0, 1]
     ax.text(0.97, 0.97, f'r = {r_val:.4f}', transform=ax.transAxes,
             fontsize=7, ha='right', va='top')
     ax.set_title('Dual entropy confirmation: H̄(d) vs zlib ratio', fontsize=9)
 
-    # Phase labels used to sit next to each point — C/D and E/F/G cluster
-    # tightly together in H(d), so the text overlapped. A shared legend
-    # below avoids that regardless of how tight the cluster is.
+    # Shared legend rather than inline per-point labels — see fig_04.
     legend_handles = [Line2D([0], [0], marker='o', linestyle='none', markersize=6,
                               markerfacecolor=style.PHASE_COLORS[p], markeredgecolor='white',
                               label=p) for p in phases]
@@ -665,10 +657,7 @@ def fig_19_music_eval(data: dict) -> plt.Figure:
     grp    = music.groupby('phase')
     si_sdr = grp['si_sdr'].mean().reindex(phase_order)
     ratio  = grp['zlib_ratio'].mean().reindex(phase_order)
-    # C/D/G all sit close together — only D-VAE breaks the pattern, so
-    # it's the only phase that needs its own color. A neutral blue, not
-    # gray — gray reads as "disabled/discarded", the wrong message for
-    # phases that are all valid, expected results.
+    # D-VAE is the only outlier here; neutral blue for the rest (see fig_01).
     colors = [style.PHASE_COLORS['D-VAE'] if p == 'D-VAE' else '#6a9fd8' for p in phase_order]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H),
@@ -842,10 +831,7 @@ def fig_23_vctk_generalization(data: dict) -> plt.Figure:
     vctk = data['vctk']
     comp, qual, wilcoxon = vctk['compression'], vctk['quality'], vctk['wilcoxon']
     phases = [p for p in ['C', 'D', 'D-VAE', 'G'] if p in comp]
-    # C/D/G all sit close together — only D-VAE breaks the pattern, so
-    # it's the only phase that needs its own color. A neutral blue, not
-    # gray — gray reads as "disabled/discarded", the wrong message for
-    # phases that are all valid, expected results.
+    # D-VAE is the only outlier here; neutral blue for the rest (see fig_01).
     colors = [style.PHASE_COLORS['D-VAE'] if p == 'D-VAE' else '#6a9fd8' for p in phases]
 
     ratios = [comp[p]['ratio'] for p in phases]

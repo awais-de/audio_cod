@@ -134,8 +134,6 @@ def _load_compression(path: Path):
         if m:
             raw = m.group(1)
             phase = 'D-VAE' if raw.lower() == 'dvae' else raw.upper()
-            if len(phase) == 1:
-                pass  # C, D, E, F, G
             comp[phase] = dict(
                 ratio=float(m.group(2)), eff_kbps=float(m.group(3)),
                 theo_kbps=float(m.group(4)), mean_h=float(m.group(5)),
