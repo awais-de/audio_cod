@@ -130,7 +130,7 @@ A pure tone compresses to 0.34 kbps; white/pink noise approaches the 9.6 kbps th
 - **The intended 200-frame (100 ms) sliding attention window does not function.** `torch.triu` where `torch.tril` was needed makes the window mask a no-op — the model trained on full unbounded causal attention across the entire ~1,995-frame chunk in every phase. Reported metrics reflect this actual behavior; the architecture description below has been corrected. Detail in [12_attention_statistics.md](docs/report_results/12_attention_statistics.md).
 - **No positional encoding.** Temporal order comes from causal convolutions and the causal attention mask only.
 - **Dropout was never active.** All training scripts passed `dropout=0.0`. Regularization came from noise augmentation and Phase D-VAE's KL term only.
-- **Latent width (`bottleneck_dim=32`) — quality ordering confirmed at 16 and 64 dims; controlled D-VAE replication at those widths is pending.** Full A→G curricula at 16-dim and 64-dim confirm monotonic quality scaling (G-16: PESQ 1.135 < G-32: 1.256 < G-64: 1.272), but the D-VAE ablation (β·KL) has only been run at 32 dims. Whether the entropy-quality coupling holds at other widths is scoped to the MS thesis extension.
+- **Latent width (`bottleneck_dim=32`) — quality ordering and the D-VAE entropy-quality coupling both confirmed at 16 and 64 dims.** Full A→G curricula at 16-dim and 64-dim confirm monotonic quality scaling (G-16: PESQ 1.135 < G-32: 1.256 < G-64: 1.272). The D-VAE ablation (β·KL) at both widths (#41) confirms the coupling holds there too, same direction and significance (p<0.0001) as at 32-dim.
 
 ---
 
