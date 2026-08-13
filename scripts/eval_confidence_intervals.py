@@ -83,6 +83,9 @@ PHASES = [
     ('F-fixed',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseF_fixed/best.pt'),
     ('G-fixed',         PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_fixed/best.pt'),
     ('NC-fixed',        PROJECT_ROOT / 'checkpoints_active/temporal_phaseNC_fixed/best.pt'),
+    # Full non-causal curriculum (#27/#45) — trained A through G from scratch,
+    # not a 30-epoch fine-tune, for a fair depth-matched comparison to G-fixed.
+    ('G-nc',            PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_nc/best.pt'),
 ]
 
 # Contrasts for Wilcoxon signed-rank tests.
@@ -108,6 +111,9 @@ CONTRASTS = [
     ('NC-fixed vs G-fixed',     'NC-fixed',    'G-fixed', 'causality ablation redone under the corrected window'),
     ('D-VAE-fixed vs D-fixed',  'D-VAE-fixed', 'D-fixed', 'KL penalty coupling under the corrected window -- still holds?'),
     ('D-Entr-fixed vs D-fixed', 'D-Entropy-fixed', 'D-fixed', 'soft entropy penalty coupling under the corrected window'),
+    # Full non-causal retrain (#45): fair depth-matched causality comparison --
+    # G-nc trained the full A-G curriculum, not a fine-tune from G-fixed.
+    ('G-fixed vs G-nc', 'G-fixed', 'G-nc', 'causality ablation, full non-causal curriculum (fair depth match)'),
 ]
 
 
