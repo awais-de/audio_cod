@@ -276,7 +276,7 @@ def fig_06_compression(data: dict) -> plt.Figure:
 
 
 # ---------------------------------------------------------------------------
-# fig_07 — Causality ablation: G vs NC per-speaker
+# fig_07 — Causality ablation: G-fixed vs G-nc per-speaker
 # ---------------------------------------------------------------------------
 
 def fig_07_causality(data: dict) -> plt.Figure:
@@ -284,9 +284,12 @@ def fig_07_causality(data: dict) -> plt.Figure:
     if metrics is None:
         raise DataNotAvailable('metrics DataFrame not loaded')
     wilcoxon = data.get('wilcoxon', [])
-    nc_p = {r['metric']: r['p_value'] for r in wilcoxon if r['contrast'] == 'G vs NC'}
-    g  = metrics[metrics['phase'] == 'G'].set_index('speaker')
-    nc = metrics[metrics['phase'] == 'NC'].set_index('speaker')
+    # G-fixed vs G-nc (#45): corrected attention window, both models trained
+    # the full A-G curriculum, not the superseded G vs NC (30-epoch fine-tune,
+    # pre-#27 window bug) contrast.
+    nc_p = {r['metric']: r['p_value'] for r in wilcoxon if r['contrast'] == 'G-fixed vs G-nc'}
+    g  = metrics[metrics['phase'] == 'G-fixed'].set_index('speaker')
+    nc = metrics[metrics['phase'] == 'G-nc'].set_index('speaker')
     common = g.index.intersection(nc.index)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
@@ -303,11 +306,17 @@ def fig_07_causality(data: dict) -> plt.Figure:
         ax.set_xlim(lo, hi)
         ax.set_ylim(lo, hi)
         ax.set_title(label, fontsize=9)
-        ax.set_xlabel('Non-causal  (Phase NC)')
-        ax.set_ylabel('Causal  (Phase G)')
+        ax.set_xlabel('Non-causal, full curriculum  (G-nc)')
+        ax.set_ylabel('Causal  (G-fixed)')
         ax.grid(True)
-    p_str = f'PESQ-WB p={nc_p.get("PESQ-WB", "n/a")}, STOI p={nc_p.get("STOI", "n/a")}' if nc_p else 'ns'
-    fig.suptitle(f'Causal vs non-causal — per speaker  (n=40, {p_str})', fontsize=9)
+    def _fmt_p(pv):
+        if pv is None:
+            return 'n/a'
+        op = '<' if pv.startswith('<') else '='
+        return f'p{op}{pv.lstrip("<")}'
+    p_str = f'PESQ-WB {_fmt_p(nc_p.get("PESQ-WB"))}, STOI {_fmt_p(nc_p.get("STOI"))}' if nc_p else 'ns'
+    fig.suptitle(f'Causal vs non-causal, fair depth-matched comparison — per speaker\n'
+                 f'(n=40, {p_str}; points above the diagonal favor causal)', fontsize=8.5)
     return fig
 
 

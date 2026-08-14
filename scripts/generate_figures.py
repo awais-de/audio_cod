@@ -55,7 +55,7 @@ FIGURES: dict[str, tuple] = {
     'fig_13_compression':             (plots.fig_06_compression,        'zlib compression ratio + effective kbps per phase'),
     'fig_14_ood_signals':             (plots.fig_05_ood,                'OOD evaluation: bitrate + STOI by signal type'),
     'fig_15_vctk_generalization':     (plots.fig_23_vctk_generalization,'VCTK cross-corpus generalization (OOD validation)'),
-    'fig_16_causality':               (plots.fig_07_causality,          'Causal (G) vs non-causal (NC) per speaker'),
+    'fig_16_causality':               (plots.fig_07_causality,          'Causal (G-fixed) vs non-causal, full curriculum (G-nc) per speaker'),
     'fig_17_corruption':              (plots.fig_09_corruption,         'Bitstream corruption robustness'),
     'fig_18_speaker_probe':           (plots.fig_08_speaker_probe,      'Speaker identity probe recall (sorted)'),
     'fig_19_music_eval':              (plots.fig_19_music_eval,         'Music evaluation SI-SDR  (requires music eval run)'),

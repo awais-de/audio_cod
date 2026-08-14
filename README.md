@@ -80,7 +80,11 @@ An earlier non-causal ablation (bidirectional attention, fine-tuned for 30 epoch
 | NC-fixed (non-causal, 30-epoch fine-tune) | 5.80 kbps | 1.222 | 0.791 |
 | G-nc (non-causal, full A→G curriculum) | 5.55 kbps | 1.173 | 0.772 |
 
-Causal beats non-causal under both protocols (paired Wilcoxon, n=40, p<0.0001 on PESQ-WB and STOI for G-fixed vs. NC-fixed and for G-fixed vs. G-nc). Training the non-causal model to the same depth as causal doesn't close the gap — it widens it, ruling out "non-causal just needed more training" as an explanation. The effect is real but small (ΔPESQ ≈ 0.07–0.10) next to the ~1.6-point gap to EnCodec at comparable bitrate below: causality is a minor contributor to that gap, not the explanation for it — the paper's argument remains that most of the gap comes from EnCodec's adversarial training producing a fundamentally different latent-shaping signal than any reconstruction-based loss used here can supply.
+Causal beats non-causal under both protocols (paired Wilcoxon, n=40, p<0.0001 on PESQ-WB and STOI for G-fixed vs. NC-fixed and for G-fixed vs. G-nc). Training the non-causal model to the same depth as causal doesn't close the gap — it widens it, ruling out "non-causal just needed more training" as an explanation:
+
+![Causal vs non-causal, per-speaker PESQ-WB and STOI, fair depth-matched comparison](plots/fig_16_causality.png)
+
+Almost every speaker falls above the diagonal — causal wins consistently, not just on average. The effect is real but small (ΔPESQ ≈ 0.07–0.10) next to the ~1.6-point gap to EnCodec at comparable bitrate below: causality is a minor contributor to that gap, not the explanation for it — the paper's argument remains that most of the gap comes from EnCodec's adversarial training producing a fundamentally different latent-shaping signal than any reconstruction-based loss used here can supply.
 
 ---
 
