@@ -205,11 +205,17 @@ def _load_rd_sweep(path: Path):
 
 # ---- R-D sweep by latent width (16 / 32 / 64-dim, per-speaker CSVs) -------
 
-# 32-dim uses the corrected-attention-window run (#27) so all three widths
-# are evaluated under the same fixed causal mask.
+# All three widths must share the same attention-window behavior to be
+# comparable. 16-dim and 64-dim (#35/#41) were only ever trained/evaluated
+# pre-#27 (the triu/tril window-mask bug -- unbounded causal attention, not
+# the intended 200-frame window); there is no _16_fixed/_64_fixed
+# counterpart. So 32-dim here is the matching pre-#27 run from the same
+# 2026-08-10 n=40 batch (comparisons/2026-08-10_paper_numbers/), not the
+# post-fix temporal_phaseG_fixed checkpoint -- using the latter would compare
+# a differently-trained 32-dim model against unfixed 16/64-dim ones.
 _RD_SWEEP_WIDTH_FILES = {
     '16-dim': '2026-08-10_rd_sweep_16dim/rd_sweep_16dim.csv',
-    '32-dim': '2026-08-13_rd_sweep_fixed/rd_sweep_fixed.csv',
+    '32-dim': '2026-08-10_paper_numbers/rd_sweep_n40.csv',
     '64-dim': '2026-08-10_rd_sweep_64dim/rd_sweep_64dim.csv',
 }
 

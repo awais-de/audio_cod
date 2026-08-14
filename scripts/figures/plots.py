@@ -905,5 +905,5 @@ def fig_24_rd_sweep_width(data: dict) -> plt.Figure:
 
     style.legend(fig, ax=axes[0], ncol=3)
     fig.suptitle('Rate-distortion sweep by latent width — stars mark each width\'s\n'
-                 'trained 3-bit operating point (n=40, corrected attention window)', fontsize=8.5)
+                 'trained 3-bit operating point (n=40)', fontsize=8.5)
     return fig
