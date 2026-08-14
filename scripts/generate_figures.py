@@ -62,6 +62,7 @@ FIGURES: dict[str, tuple] = {
     'fig_20_attention_stats':         (plots.fig_11_attention,          '[SKIP] Attention stats — requires checkpoint inference'),
     'fig_21_quant_gap':               (plots.fig_12_quant_gap,          '[SKIP] Quantisation gap — requires float vs 3-bit inference'),
     'fig_22_attn_heatmaps':           (plots.fig_14_attn_heatmaps,      '[SKIP] Attention heatmaps — requires saved attention weights'),
+    'fig_23_rd_sweep_width':          (plots.fig_24_rd_sweep_width,     'R-D sweep by latent width: PESQ-WB + STOI vs bitrate, 16/32/64-dim'),
 }
 
 

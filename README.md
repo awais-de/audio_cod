@@ -145,6 +145,10 @@ The 20 CP research project is complete. The MS thesis (30 CP) extends it by test
 | 1 | Soft entropy penalty training (D-Entropy) | Coupling holds under a second independent mechanism — not VAE-specific | **Closed.** D-Entropy vs D: ΔPESQ=−0.071, ΔSTOI=−0.057, p<0.0001*** (n=40, genuine — see issue #10). Larger effect than D-VAE. |
 | 2 | Music evaluation — MUSDB18-HQ, SI-SDR | Modality independence — coupling holds beyond speech | **Closed.** D-VAE = highest compression (1.440×) + lowest SI-SDR (−7.35 dB) on 40 tracks. D-VAE vs D p<0.0001*** on both metrics. |
 | 3 | Bottleneck width ablation (16 / 64 dims) | Coupling holds regardless of latent width | **Closed.** 16-dim confirmed below the 32-dim baseline unconditionally (across its full R-D curve). 64-dim beats the baseline only at its own higher trained bitrate — a bitrate-matched check (#31) shows the advantage doesn't survive controlling for bitrate. D-VAE ablation (#41) directly confirms the entropy-quality coupling itself holds at both 16-dim and 64-dim, same direction and significance (p<0.0001***) as at 32-dim. |
+
+![Rate-distortion sweep by latent width: PESQ-WB and STOI vs bitrate for 16/32/64-dim](plots/fig_23_rd_sweep_width.png)
+
+Each width's curve spans a different bitrate range (wider bottleneck → higher native bitrate), so the fair comparison is at the bitrates where curves overlap, not at each width's own endpoint. At ~6-7 kbps — where 32-dim and 64-dim overlap — 32-dim sits above 64-dim on both metrics; 64-dim only pulls ahead once it's spending far more bitrate than 32-dim ever does. 16-dim stays below both across its entire range.
 | 4 | VQ comparison (replace SQ with RVQ, same encoder) | Coupling holds regardless of quantizer class — not SQ-specific | **Not started.** Requires a full RVQ curriculum from scratch. This is the strongest remaining open objection to the generality of the coupling claim. |
 
 ### Open housekeeping (resolve before numbers go in the paper)

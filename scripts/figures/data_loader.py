@@ -41,6 +41,10 @@ def load_all(project_root: Path) -> dict:
     if probe_dir:
         _try(data, 'speaker_probe', _load_speaker_probe, probe_dir / 'report.txt')
 
+    rd_by_width = _load_rd_sweep_by_width(comp)
+    if rd_by_width:
+        data['rd_by_width'] = rd_by_width
+
     # One-off historical snapshots, evaluated on the fixed canonical 5-speaker
     # set (unaffected by dataset completeness) -- pinned dates are fine here.
     _try(data, 'rd',           _load_rd_sweep,        comp / '2026-07-01_rd_sweep' / 'report.txt')
@@ -197,6 +201,33 @@ def _load_rd_sweep(path: Path):
                     pesq=float(m.group(3)), stoi=float(m.group(4)),
                 ))
     return dict(ours=ours, encodec=encodec)
+
+
+# ---- R-D sweep by latent width (16 / 32 / 64-dim, per-speaker CSVs) -------
+
+# 32-dim uses the corrected-attention-window run (#27) so all three widths
+# are evaluated under the same fixed causal mask.
+_RD_SWEEP_WIDTH_FILES = {
+    '16-dim': '2026-08-10_rd_sweep_16dim/rd_sweep_16dim.csv',
+    '32-dim': '2026-08-13_rd_sweep_fixed/rd_sweep_fixed.csv',
+    '64-dim': '2026-08-10_rd_sweep_64dim/rd_sweep_64dim.csv',
+}
+
+
+def _load_rd_sweep_by_width(comp: Path):
+    result: dict = {}
+    for width, rel_path in _RD_SWEEP_WIDTH_FILES.items():
+        path = comp / rel_path
+        if not path.exists():
+            continue
+        df = pd.read_csv(path)
+        grouped = (df.groupby('bits')[['kbps', 'pesq_wb', 'stoi']]
+                   .mean().reset_index().sort_values('bits'))
+        result[width] = [
+            dict(bits=int(r.bits), kbps=float(r.kbps), pesq=float(r.pesq_wb), stoi=float(r.stoi))
+            for r in grouped.itertuples()
+        ]
+    return result
 
 
 # ---- Multi-coder ----------------------------------------------------------

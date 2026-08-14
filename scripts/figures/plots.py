@@ -869,3 +869,41 @@ def fig_23_vctk_generalization(data: dict) -> plt.Figure:
                  f'Highest compression, lowest quality — zlib ratio, D-VAE vs D: '
                  f'p={dvae_d["p_value"]}{dvae_d["sig"]}', fontsize=8.5)
     return fig
+
+
+# ---------------------------------------------------------------------------
+# fig_24 — R-D sweep by latent width (16 / 32 / 64-dim)
+# ---------------------------------------------------------------------------
+
+def fig_24_rd_sweep_width(data: dict) -> plt.Figure:
+    rd_by_width = data.get('rd_by_width')
+    if not rd_by_width:
+        raise DataNotAvailable('rd_by_width — run scripts/eval_width_rd_sweep.py for 16/32/64-dim first')
+
+    widths = {
+        '16-dim': '#4472c8',
+        '32-dim': style.PHASE_COLORS['G'],
+        '64-dim': '#003c5a',
+    }
+
+    fig, axes = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
+    for ax, metric, ylabel in [(axes[0], 'pesq', 'PESQ-WB'), (axes[1], 'stoi', 'STOI')]:
+        for width_label, color in widths.items():
+            rows = rd_by_width.get(width_label)
+            if not rows:
+                continue
+            kbps = [r['kbps'] for r in rows]
+            vals = [r[metric] for r in rows]
+            ax.plot(kbps, vals, 'o-', color=color, linewidth=1.2, markersize=4, label=width_label)
+            trained = next(r for r in rows if r['bits'] == 3)
+            ax.scatter([trained['kbps']], [trained[metric]], color=color, s=70, zorder=6,
+                       marker='*', edgecolors='white', linewidths=0.5)
+        ax.set_xlabel('Effective bitrate (kbps)')
+        ax.set_ylabel(ylabel)
+        ax.set_title(ylabel, fontsize=9)
+        ax.grid(True)
+
+    style.legend(fig, ax=axes[0], ncol=3)
+    fig.suptitle('Rate-distortion sweep by latent width — stars mark each width\'s\n'
+                 'trained 3-bit operating point (n=40, corrected attention window)', fontsize=8.5)
+    return fig
