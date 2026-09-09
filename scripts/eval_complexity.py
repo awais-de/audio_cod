@@ -32,6 +32,10 @@ def load_ours(ckpt_path="checkpoints_active/temporal_phaseG/best.pt"):
         window_size=ckpt["window_size"],
         bottleneck_dim=ckpt["bottleneck_dim"],
         temporal_stride=ckpt["temporal_stride"],
+        # Without this, a _fixed checkpoint loads with the mask disabled --
+        # state_dict keys are identical either way (the mask adds no
+        # parameters), so this fails silently rather than erroring.
+        fixed_window_mask=ckpt.get("fixed_window_mask", False),
     )
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
@@ -89,10 +93,15 @@ def min_samples_for_one_frame(encode_fn, sample_rate, lo=1, hi=None):
 
 
 if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--checkpoint", default="checkpoints_active/temporal_phaseG/best.pt")
+    args = ap.parse_args()
+
     torch.manual_seed(0)
 
     # ---- Ours ----
-    ours = load_ours()
+    ours = load_ours(args.checkpoint)
     ob = ours_breakdown(ours)
     x16 = torch.randn(1, 1, 16000)  # 1s @ 16kHz
 
@@ -104,7 +113,8 @@ if __name__ == "__main__":
         z_ours = ours.encode(x16)
     t_decode_ours = time_call(lambda: ours.decode(z_ours))
 
-    print("=== Ours (Phase G, 16 kHz, causal, 3-bit SQ) ===")
+    print(f"=== Ours ({args.checkpoint}, 16 kHz, causal, 3-bit SQ, "
+          f"fixed_window_mask={ours.encoder.transformer_blocks[0].attention.fixed_window_mask}) ===")
     for k, v in ob.items():
         print(f"  {k:16s} {v:>14,}")
     print(f"  MACs (1s clip, full fwd) {macs_enc_ours:>14,.0f}")

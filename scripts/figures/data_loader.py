@@ -68,7 +68,10 @@ def load_all(project_root: Path) -> dict:
     _try(data, 'multi_coder',  _load_multi_coder,     comp / '2026-07-10_multi_coder' / 'report.txt')
     _try(data, 'ood',          _load_ood,             comp / '2026-07-01_ood_eval' / 'report.txt')
     _try(data, 'corruption',   _load_corruption,      comp / '2026-07-01_corruption_test' / 'report.txt')
-    _try(data, 'complexity',   _load_complexity,      comp / '2026-07-18_complexity_latency' / 'report.txt')
+    # Measured against the platform checkpoint (fixed 100ms attention window).
+    # Superseded: 2026-07-18_complexity_latency (pre-fix checkpoint) -- kept only
+    # to show the two are numerically identical, see the note in the newer report.
+    _try(data, 'complexity',   _load_complexity,      comp / '2026-09-09_complexity_latency' / 'report.txt')
     _try(data, 'vctk',         _load_second_dataset,  comp / '2026-07-10_second_dataset' / 'report.txt')
     # eval_music.py saves to comparisons/<date>_music_eval/metrics.csv — find latest
     music_dirs = sorted(comp.glob('*_music_eval'), reverse=True)
@@ -149,8 +152,16 @@ _RE_COMP_ROW = re.compile(
 # figure code keys on the display names used by the CI report ("D-VAE",
 # "D-Entropy"). Anything not listed here just gets upper-cased.
 _COMP_PHASE_NAMES = {
-    'dvae':      'D-VAE',
-    'dentropy':  'D-Entropy',
+    'dvae':             'D-VAE',
+    'dentropy':         'D-Entropy',
+    'cfixed':           'C-fixed',
+    'dfixed':           'D-fixed',
+    'dvaefixed':        'D-VAE-fixed',
+    'dentropyfixed':    'D-Entropy-fixed',
+    'efixed':           'E-fixed',
+    'ffixed':           'F-fixed',
+    'gfixed':           'G-fixed',
+    'ncfixed':          'NC-fixed',
 }
 
 

@@ -41,6 +41,18 @@ PHASES = {
     'phaseDvae16': PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_16/best.pt',
     'phaseD64':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_64/best.pt',
     'phaseDvae64': PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_64/best.pt',
+    # Corrected 100ms attention window (#27-29) -- the actual system this report
+    # presents. Quality/bitrate for this family already exists in the n=40 CI
+    # report; entropy never did, which would have left the platform's own
+    # headline evidence measured on a different, unbounded-attention model.
+    'phaseCfixed':        PROJECT_ROOT / 'checkpoints_active/temporal_phaseC_fixed/best.pt',
+    'phaseDfixed':        PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_fixed/best.pt',
+    'phaseDvaefixed':     PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_fixed/best.pt',
+    'phaseDentropyfixed': PROJECT_ROOT / 'checkpoints_active/temporal_phaseEntropy_fixed/best.pt',
+    'phaseEfixed':        PROJECT_ROOT / 'checkpoints_active/temporal_phaseE_fixed/best.pt',
+    'phaseFfixed':        PROJECT_ROOT / 'checkpoints_active/temporal_phaseF_fixed/best.pt',
+    'phaseGfixed':        PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_fixed/best.pt',
+    'phaseNCfixed':       PROJECT_ROOT / 'checkpoints_active/temporal_phaseNC_fixed/best.pt',
 }
 
 # Per-dimension table column width: wide enough for the longest phase name plus a
