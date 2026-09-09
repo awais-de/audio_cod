@@ -67,7 +67,8 @@ def load_all(project_root: Path) -> dict:
 
     # One-off historical snapshots, evaluated on the fixed canonical 5-speaker
     # set (unaffected by dataset completeness) -- pinned dates are fine here.
-    _try(data, 'multi_coder',  _load_multi_coder,     comp / '2026-07-10_multi_coder' / 'report.txt')
+    mc_dir = _latest(comp, '*_multi_coder')
+    _try(data, 'multi_coder',  _load_multi_coder,     (mc_dir or comp / '2026-07-10_multi_coder') / 'report.txt')
     ood_dir = _latest(comp, '*_ood_eval_temporal_phaseG_fixed') or comp / '2026-07-01_ood_eval'
     _try(data, 'ood',          _load_ood,             ood_dir / 'report.txt')
     corr_dir = _latest(comp, '*_corruption_test_temporal_phaseG_fixed') or comp / '2026-07-01_corruption_test'

@@ -23,9 +23,15 @@ except ImportError:
 
 
 def find_checkpoint(project_root: Path) -> Path:
-    """Return the best available checkpoint. Phase G is preferred — it achieves
-    the highest PESQ/STOI scores across all trained phases."""
+    """Return the best available checkpoint. The platform is the corrected 100ms
+    attention window (`_fixed`, issues #27-29) -- preferred first, at each phase
+    depth, so a machine with only the original bootstrap bundle (which does not
+    yet carry the `_fixed` family -- pending a re-upload) still falls back
+    correctly instead of raising."""
     for p in [
+        project_root / 'checkpoints_active/temporal_phaseG_fixed/best.pt',
+        project_root / 'checkpoints_active/temporal_phaseF_fixed/best.pt',
+        project_root / 'checkpoints_active/temporal_phaseC_fixed/best.pt',
         project_root / 'checkpoints_active/temporal_phaseG/best.pt',
         project_root / 'checkpoints_active/temporal_phaseF/best.pt',
         project_root / 'checkpoints_active/temporal_phaseC/best.pt',

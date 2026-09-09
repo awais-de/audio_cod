@@ -7,6 +7,16 @@ No access token required.
 
 Usage:
   python scripts/download_checkpoints.py
+
+KNOWN GAP (2026-09-09): this bundle carries only the original checkpoints
+(C/D/D-VAE/E/F/G, pre-#27 attention-window fix). The platform this project now
+reports against is the `_fixed` family (100ms window, issues #27-29) plus
+D-Entropy -- none of that is in this zip yet. `find_checkpoint()` in
+src/codec_utils.py already prefers `_fixed` and falls back to these, so nothing
+breaks on a fresh clone, but a fresh clone cannot reproduce the README's headline
+numbers until this bundle is re-exported to include the `_fixed` checkpoints
+(and ideally temporal_phaseEntropy / temporal_phaseEntropy_fixed). That
+re-export needs Drive access this environment doesn't have -- pending.
 """
 
 import sys

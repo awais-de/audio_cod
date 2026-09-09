@@ -570,8 +570,12 @@ def fig_15_dual_entropy(data: dict) -> plt.Figure:
 # ---------------------------------------------------------------------------
 
 def fig_16_multi_coder(data: dict) -> plt.Figure:
-    rows   = data['multi_coder']
-    phases = [r['phase'] for r in rows]
+    all_rows = data['multi_coder']
+    # Prefer the platform (_fixed) family when both are present in the same report
+    # (post-2026-09-09 runs carry all 12); fall back to whatever's there otherwise.
+    fixed_rows = [r for r in all_rows if r['phase'].endswith('-fixed')]
+    rows   = fixed_rows if fixed_rows else all_rows
+    phases = [r['phase'].removesuffix('-fixed') for r in rows]
     zlib   = [r['zlib']  for r in rows]
     lzma   = [r['lzma']  for r in rows]
     bz2    = [r['bz2']   for r in rows]

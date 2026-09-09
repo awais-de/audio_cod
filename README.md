@@ -233,6 +233,13 @@ pip install -r requirements.txt
 python bootstrap.py
 ```
 
+> **Checkpoint bundle note:** the downloadable bundle currently carries the original
+> checkpoints (pre-#27 attention-window fix), not the `_fixed` platform family this
+> README reports numbers for. `find_checkpoint()` falls back to those automatically, so
+> nothing breaks — but a fresh clone won't reproduce the headline numbers above until the
+> bundle is updated. If you trained locally, `checkpoints_active/temporal_phaseG_fixed/best.pt`
+> is what these results describe.
+
 Once bootstrap completes with no failures, run inference:
 
 ```
