@@ -280,24 +280,24 @@ The `.nacodec` file is the actual compressed bitstream: a 28-byte header (magic 
 Example output from the encoder:
 
 ```
-checkpoint:  temporal_phaseG/best.pt  (phase=G, d_model=384, bottleneck=32)
+checkpoint:  temporal_phaseG_fixed/best.pt  (phase=G, d_model=384, bottleneck=32)
 input:       input.wav  (5.00s @ 16000 Hz, 80000 samples)
-chunk   1/5  latent=(32, 100)  compressed=1181B
-chunk   2/5  latent=(32, 100)  compressed=1173B
+chunk   1/5  latent=(99, 32)  compressed=525B
+chunk   2/5  latent=(99, 32)  compressed=934B
 ...
-bitrate:     5.87 kbps
-file_size:   3.7 KB  (157 KB uncompressed PCM, 42× reduction)
+bitrate:     6.66 kbps
+file_size:   4.2 KB  (156 KB uncompressed PCM, 37× reduction)
 output:      compressed.nacodec
 ```
 
 Example output from the decoder:
 
 ```
-checkpoint:  temporal_phaseG/best.pt  (phase=G, d_model=384, bottleneck=32)
+checkpoint:  temporal_phaseG_fixed/best.pt  (phase=G, d_model=384, bottleneck=32)
 input:       compressed.nacodec  (5.00s @ 16000Hz, 5 chunks)
-chunk   1/5  latent=(32, 100)  1181B  → 16000 samples
+chunk   1/5  latent=(99, 32)  525B  → 15840 samples
 ...
-bitrate:     5.87 kbps
+bitrate:     6.66 kbps
 output:      reconstructed.wav
 ```
 
@@ -401,13 +401,13 @@ audio_cod/
 │   ├── download_checkpoints.py     Download pre-trained weights from Google Drive
 │   ├── 01_phaseA_train.py  …  08a_phaseG_train.py / 08b_phaseG_eval.py
 │   └── 13_rd_sweep.py              Rate-distortion sweep across quantization bit-depths
-├── checkpoints_active/             Downloaded by bootstrap.py — not tracked in git
-│   ├── temporal_phaseC/best.pt
-│   ├── temporal_phaseD/best.pt
-│   ├── temporal_phaseD_vae/best.pt
-│   ├── temporal_phaseE/best.pt
-│   ├── temporal_phaseF/best.pt
-│   └── temporal_phaseG/best.pt
+├── checkpoints_active/             Not tracked in git
+│   ├── temporal_phaseC/best.pt      downloaded by bootstrap.py — original attention
+│   ├── ...                          window; find_checkpoint() falls back to these
+│   ├── temporal_phaseG/best.pt      if the _fixed versions below are absent
+│   ├── temporal_phaseC_fixed/best.pt  the platform this README reports numbers for
+│   ├── ...                            (100 ms window, #27-29) — not yet in the
+│   └── temporal_phaseG_fixed/best.pt  bootstrap bundle, see Quick start
 └── inference_runs/                 Per-run artifacts from infer_offline.py — not tracked
 ```
 
