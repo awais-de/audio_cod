@@ -45,9 +45,12 @@ def load_all(project_root: Path) -> dict:
     if rd_by_width:
         data['rd_by_width'] = rd_by_width
 
+    # The headline R-D sweep is the n=40 run, so fig_03 matches the README's
+    # canonical 40-speaker basis rather than the earlier 5-speaker sweep.
+    _try(data, 'rd',           _load_rd_sweep,        comp / '2026-08-10_paper_numbers' / 'report.txt')
+
     # One-off historical snapshots, evaluated on the fixed canonical 5-speaker
     # set (unaffected by dataset completeness) -- pinned dates are fine here.
-    _try(data, 'rd',           _load_rd_sweep,        comp / '2026-07-01_rd_sweep' / 'report.txt')
     _try(data, 'multi_coder',  _load_multi_coder,     comp / '2026-07-10_multi_coder' / 'report.txt')
     _try(data, 'ood',          _load_ood,             comp / '2026-07-01_ood_eval' / 'report.txt')
     _try(data, 'corruption',   _load_corruption,      comp / '2026-07-01_corruption_test' / 'report.txt')
@@ -181,7 +184,9 @@ def _load_rd_sweep(path: Path):
     encodec: list = []
     mode = None
     for line in path.read_text(encoding='utf-8').splitlines():
-        if 'OURS (scalar' in line:
+        # 13_rd_sweep.py writes "OURS (scalar quantization...)"; eval_paper_numbers.py
+        # writes "PART 2 — R-D SWEEP". Accept either so both report layouts parse.
+        if 'OURS (scalar' in line or 'R-D SWEEP' in line:
             mode = 'ours'
         elif 'ENCODEC REFERENCE' in line:
             mode = 'enc'
