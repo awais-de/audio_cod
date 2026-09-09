@@ -111,3 +111,4 @@ inference_runs/
 
 # Local-only tooling — not for distribution
 scripts/upload_checkpoints.py
+project_report/reference/
