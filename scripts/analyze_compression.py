@@ -29,6 +29,10 @@ PHASES = {
     'phaseC':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseC/best.pt',
     'phaseD':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseD/best.pt',
     'phaseDvae': PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae/best.pt',
+    # Second entropy-suppression mechanism (#6). Its quality was measured with every
+    # other phase, but its latent entropy never was -- which left the one phase that
+    # penalizes entropy directly as the only one without an entropy number.
+    'phaseDentropy': PROJECT_ROOT / 'checkpoints_active/temporal_phaseEntropy/best.pt',
     'phaseE':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseE/best.pt',
     'phaseF':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseF/best.pt',
     'phaseG':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseG/best.pt',
@@ -38,6 +42,10 @@ PHASES = {
     'phaseD64':    PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_64/best.pt',
     'phaseDvae64': PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_64/best.pt',
 }
+
+# Per-dimension table column width: wide enough for the longest phase name plus a
+# separating space, so header cells never merge (see the header format below).
+_COL_W = max(12, max(len(n) for n in PHASES) + 2)
 
 CLIP_SEC = 5
 SR       = 16000
@@ -171,7 +179,9 @@ def main():
     # Per-dimension entropy table (averaged across speakers)
     lines += [
         'PER-DIMENSION MEAN ENTROPY  (averaged across 5 speakers)',
-        f"{'Dim':<6}" + ''.join(f"{n:>12}" for n in models),
+        # Width must exceed the longest phase name, or adjacent header cells run
+        # together into one token and every downstream column parse misaligns.
+        f"{'Dim':<6}" + ''.join(f"{n:>{_COL_W}}" for n in models),
         sep,
     ]
     # Bottleneck width varies across phases (16/32/64-dim variants) -- each
@@ -188,7 +198,8 @@ def main():
         row_str = f"  {d:<4}"
         for name in models:
             vals = dim_entropy_per_phase[name]
-            row_str += f"{vals[d]:>12.3f}" if d < len(vals) else f"{'--':>12}"
+            row_str += (f"{vals[d]:>{_COL_W}.3f}" if d < len(vals)
+                        else f"{'--':>{_COL_W}}")
         lines.append(row_str)
 
     lines += [sep, '']

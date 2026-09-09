@@ -135,6 +135,15 @@ _RE_COMP_ROW = re.compile(
 )
 
 
+# analyze_compression.py writes phase keys like "phaseDvae"; the rest of the
+# figure code keys on the display names used by the CI report ("D-VAE",
+# "D-Entropy"). Anything not listed here just gets upper-cased.
+_COMP_PHASE_NAMES = {
+    'dvae':      'D-VAE',
+    'dentropy':  'D-Entropy',
+}
+
+
 def _load_compression(path: Path):
     comp: dict = {}
     per_dim: dict = {}
@@ -144,7 +153,7 @@ def _load_compression(path: Path):
         m = _RE_COMP_ROW.match(line)
         if m:
             raw = m.group(1)
-            phase = 'D-VAE' if raw.lower() == 'dvae' else raw.upper()
+            phase = _COMP_PHASE_NAMES.get(raw.lower(), raw.upper())
             comp[phase] = dict(
                 ratio=float(m.group(2)), eff_kbps=float(m.group(3)),
                 theo_kbps=float(m.group(4)), mean_h=float(m.group(5)),
@@ -156,7 +165,7 @@ def _load_compression(path: Path):
             phase_cols = []
             for t in tokens[1:]:
                 name = t.replace('phase', '')
-                name = 'D-VAE' if name.lower() == 'dvae' else name.upper()
+                name = _COMP_PHASE_NAMES.get(name.lower(), name.upper())
                 phase_cols.append(name)
             per_dim = {p: [] for p in phase_cols}
             in_per_dim = True

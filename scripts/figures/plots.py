@@ -609,36 +609,45 @@ def fig_16_multi_coder(data: dict) -> plt.Figure:
 
 def fig_17_entropy_ablation(data: dict) -> plt.Figure:
     ci = data['ci']
+    comp = data.get('compression', {})
     phases = [p for p in ['D', 'D-VAE', 'D-Entropy'] if p in ci]
+
+    # Measured latent entropy, the quantity these phases actually manipulate.
+    # Only plotted when every phase has it -- a partly-filled panel would imply
+    # the missing phase has no entropy rather than no measurement.
+    show_entropy = all(p in comp for p in phases)
 
     # ylim tuned so bar differences are clearly visible
     ylims = {
-        'pesq': (1.08, 1.28),
-        'stoi': (0.66, 0.79),
-        'kbps': (0.0, 6.5),
+        'pesq':   (1.08, 1.28),
+        'stoi':   (0.66, 0.79),
+        'kbps':   (0.0, 6.5),
+        'mean_h': (0.9, 1.6),
     }
 
-    fig, axes = plt.subplots(1, 3, figsize=(style.COL2_W, style.ROW_H),
+    panels = [('pesq', 'PESQ-WB'), ('stoi', 'STOI'), ('kbps', 'Eff. kbps')]
+    if show_entropy:
+        panels.insert(0, ('mean_h', 'Mean H(d), bits'))
+
+    fig, axes = plt.subplots(1, len(panels), figsize=(style.COL2_W, style.ROW_H),
                               gridspec_kw={'wspace': 0.2})
-    for ax, metric, label in [
-        (axes[0], 'pesq', 'PESQ-WB'),
-        (axes[1], 'stoi', 'STOI'),
-        (axes[2], 'kbps', 'Eff. kbps'),
-    ]:
-        vals   = [ci[p][metric]  for p in phases]
+    for ax, (metric, label) in zip(axes, panels):
+        src    = comp if metric == 'mean_h' else ci
+        vals   = [src[p][metric] for p in phases]
         colors = [style.PHASE_COLORS[p] for p in phases]
-        errs_lo = [ci[p][metric] - ci[p].get(f'{metric}_lo', ci[p][metric]) for p in phases]
-        errs_hi = [ci[p].get(f'{metric}_hi', ci[p][metric]) - ci[p][metric] for p in phases]
+        errs_lo = [src[p][metric] - src[p].get(f'{metric}_lo', src[p][metric]) for p in phases]
+        errs_hi = [src[p].get(f'{metric}_hi', src[p][metric]) - src[p][metric] for p in phases]
         lo, hi  = ylims[metric]
         bars = ax.bar(range(len(phases)), vals, 0.55, color=colors,
                       edgecolor='white', linewidth=0.5, bottom=0)
-        if metric != 'kbps':
+        # kbps and entropy are point estimates here, not bootstrapped -- no bars.
+        if metric not in ('kbps', 'mean_h'):
             ax.errorbar(range(len(phases)), vals, yerr=[errs_lo, errs_hi],
                         fmt='none', color='#333', linewidth=0.8, capsize=2)
         span = hi - lo
         for bar, v in zip(bars, vals):
             ax.text(bar.get_x() + bar.get_width() / 2, v + 0.01 * span,
-                    f'{v:.3f}' if metric != 'kbps' else f'{v:.2f}',
+                    f'{v:.2f}' if metric == 'kbps' else f'{v:.3f}',
                     ha='center', va='bottom', fontsize=6.5)
         ax.set_xticks(range(len(phases)))
         # "D-VAE" and "D-Entropy" are wide enough at this bar spacing to run
@@ -648,7 +657,7 @@ def fig_17_entropy_ablation(data: dict) -> plt.Figure:
         ax.set_ylim(lo, hi)
         ax.grid(True, axis='y')
 
-    fig.suptitle('Penalizing latent entropy trades quality for bitrate\n'
+    fig.suptitle('Suppressing latent entropy lowers quality, by either mechanism\n'
                  '(D: no penalty · D-VAE: KL penalty · D-Entropy: soft-entropy penalty; '
                  'both vs D: p<0.0001***, n=40)', fontsize=8.5)
     return fig
