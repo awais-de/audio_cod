@@ -173,12 +173,16 @@ def _load_compression(path: Path):
         if in_per_dim:
             parts = line.split()
             if len(parts) == len(phase_cols) + 1:
-                try:
-                    int(parts[0])
-                    for p, v in zip(phase_cols, parts[1:]):
+                if not parts[0].isdigit():
+                    continue
+                # Narrower phases print "--" past their last dimension. Skip those
+                # cells individually: aborting the row on the first one would also
+                # discard the real values in every column to its right.
+                for p, v in zip(phase_cols, parts[1:]):
+                    try:
                         per_dim[p].append(float(v))
-                except ValueError:
-                    pass
+                    except ValueError:
+                        continue
     return comp, per_dim
 
 
