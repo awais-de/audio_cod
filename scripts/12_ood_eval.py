@@ -207,7 +207,7 @@ def main():
     sep = '-' * 68
     lines = [
         '', SEP,
-        'OOD EVALUATION — Phase G (non-causal codec vs signal type)',
+        'OOD EVALUATION — Phase G (causal codec vs signal type)',
         f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
         f"Checkpoint: {ckpt_path.parent.name}",
         SEP, '',
