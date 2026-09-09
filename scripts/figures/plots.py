@@ -404,23 +404,113 @@ def fig_10_dim_heatmap(data: dict) -> plt.Figure:
 # fig_11 — Attention statistics (requires checkpoint inference)
 # ---------------------------------------------------------------------------
 
-def fig_11_attention(_data: dict) -> plt.Figure:
-    raise DataNotAvailable(
-        'fig_20_attention_stats requires running scripts/12_attention_stats.py against the Phase G checkpoint. '
-        'Run: python scripts/12_attention_stats.py --checkpoint checkpoints_active/temporal_phaseG/best.pt '
-        '--output comparisons/attention_stats/report.txt'
-    )
+def fig_11_attention(data: dict) -> plt.Figure:
+    stats = data.get('attention')
+    if not stats:
+        raise DataNotAvailable('attention statistics not loaded')
+    from .data_loader import (ATTENTION_FRAME_RATE, ATTENTION_INTENDED_WINDOW,
+                              ATTENTION_SEQ_LEN)
+
+    layers    = [s['layer'] for s in stats]
+    distance  = [s['distance'] for s in stats]
+    entropy   = [s['entropy'] for s in stats]
+    x = np.arange(len(layers))
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
+
+    # Left: attended distance against the two reference lines that make the
+    # window bug legible -- what the window asked for vs what was available.
+    ax1.bar(x, distance, 0.55, color='#6a9fd8', edgecolor='white', linewidth=0.5,
+            label='Measured mean distance')
+    ax1.axhline(ATTENTION_INTENDED_WINDOW, color=style.PHASE_COLORS['D-VAE'],
+                linestyle='--', linewidth=1.0,
+                label=f'Intended window ({ATTENTION_INTENDED_WINDOW} frames)')
+    ax1.axhline(ATTENTION_SEQ_LEN, color='#666666', linestyle=':', linewidth=1.0,
+                label=f'Chunk length ({ATTENTION_SEQ_LEN} frames)')
+    ax1.set_yscale('log')
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(layers)
+    ax1.set_xlabel('Encoder transformer layer')
+    ax1.set_ylabel('Mean attended distance (frames)')
+    ax1.grid(True, axis='y')
+
+    # Secondary axis in milliseconds -- the frames are at the transformer's
+    # 2 kHz input rate, not the 100 Hz latent rate. Explicit plain-number ticks:
+    # inheriting the log formatter here prints powers of ten that look like a
+    # duplicate of the left axis.
+    ax1_ms = ax1.secondary_yaxis(
+        'right',
+        functions=(lambda f: f / ATTENTION_FRAME_RATE * 1000,
+                   lambda ms: ms / 1000 * ATTENTION_FRAME_RATE))
+    ax1_ms.set_yticks([100, 250, 500, 1000])
+    ax1_ms.set_yticklabels(['100', '250', '500', '1000'])
+    ax1_ms.set_ylabel('Attended context (ms)')
+
+    ax2.bar(x, entropy, 0.55, color='#6a9fd8', edgecolor='white', linewidth=0.5)
+    for xi, v in zip(x, entropy):
+        ax2.text(xi, v + 0.02, f'{v:.2f}', ha='center', va='bottom', fontsize=6.5)
+    ax2.set_ylim(min(entropy) - 0.3, max(entropy) + 0.3)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(layers)
+    ax2.set_xlabel('Encoder transformer layer')
+    ax2.set_ylabel('Mean attention entropy (bits)')
+    ax2.grid(True, axis='y')
+
+    fig.suptitle('Attention span and selectivity per layer (Phase G, pre-fix window)',
+                 fontsize=9)
+    style.legend(fig, ax=ax1)
+    return fig
 
 
 # ---------------------------------------------------------------------------
 # fig_12 — Quantisation gap (requires float vs 3-bit inference)
 # ---------------------------------------------------------------------------
 
-def fig_12_quant_gap(_data: dict) -> plt.Figure:
-    raise DataNotAvailable(
-        'fig_21_quant_gap requires float and 3-bit inference against Phase G. '
-        'Run scripts/quantisation_gap.py first to produce comparisons/quant_gap/report.txt'
-    )
+def fig_12_quant_gap(data: dict) -> plt.Figure:
+    rows = data.get('quant_gap')
+    if not rows:
+        raise DataNotAvailable('quantisation gap data not loaded')
+
+    speakers = [r['speaker'] for r in rows]
+    flt      = [r['float_snr'] for r in rows]
+    q3       = [r['q3_snr'] for r in rows]
+    gaps     = [f - q for f, q in zip(flt, q3)]
+    mean_gap = float(np.mean(gaps))
+
+    x = np.arange(len(speakers))
+    w = 0.36
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(style.COL2_W, style.ROW_H))
+
+    ax1.bar(x - w / 2, flt, w, color='#6a9fd8', edgecolor='white', linewidth=0.5,
+            label='Float latent')
+    ax1.bar(x + w / 2, q3, w, color=style.PHASE_COLORS['G'], edgecolor='white',
+            linewidth=0.5, label='3-bit quantised')
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(speakers)
+    ax1.set_xlabel('Speaker')
+    ax1.set_ylabel('Reconstruction SNR (dB)')
+    ax1.grid(True, axis='y')
+
+    # Right panel: the gap alone, which is the actual result -- the bars on the
+    # left differ mostly by speaker difficulty, which hides how small it is.
+    ax2.bar(x, gaps, 0.55, color=style.PHASE_COLORS['D-VAE'], edgecolor='white',
+            linewidth=0.5)
+    for xi, v in zip(x, gaps):
+        ax2.text(xi, v + 0.01, f'{v:.2f}', ha='center', va='bottom', fontsize=6.5)
+    ax2.axhline(mean_gap, color='#333333', linestyle='--', linewidth=1.0,
+                label=f'Mean {mean_gap:.2f} dB')
+    ax2.set_ylim(0, max(gaps) * 1.35)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(speakers)
+    ax2.set_xlabel('Speaker')
+    ax2.set_ylabel('SNR lost to quantisation (dB)')
+    ax2.grid(True, axis='y')
+    ax2.legend(fontsize=7, loc='upper left')
+
+    fig.suptitle('Cost of 3-bit scalar quantisation (Phase G)', fontsize=9)
+    style.legend(fig, ax=ax1)
+    return fig
 
 
 # ---------------------------------------------------------------------------
@@ -429,8 +519,12 @@ def fig_12_quant_gap(_data: dict) -> plt.Figure:
 
 def fig_14_attn_heatmaps(_data: dict) -> plt.Figure:
     raise DataNotAvailable(
-        'fig_22_attn_heatmaps requires per-utterance attention weights. '
-        'Run scripts/12_attention_stats.py with --save-heatmaps flag.'
+        'fig_22_attn_heatmaps requires per-utterance attention weights, which are not '
+        'stored anywhere in this repository. The 2026-07-07 analysis run that produced '
+        'them was ad hoc and its script was never committed, so regenerating this figure '
+        'means re-hooking encoder.transformer_blocks[i].attention and re-running inference '
+        'against a Phase G checkpoint. Rendered outputs from the original run survive at '
+        'docs/archive/export/plots/09_attn_layer1_head0.png (and layers 3, 6).'
     )
 
 

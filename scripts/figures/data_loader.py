@@ -45,6 +45,10 @@ def load_all(project_root: Path) -> dict:
     if rd_by_width:
         data['rd_by_width'] = rd_by_width
 
+    # Transcribed snapshots, not parsed from comparisons/ -- see the constants.
+    data['attention'] = ATTENTION_STATS
+    data['quant_gap'] = QUANT_GAP
+
     # The headline R-D sweep is the n=40 run, so fig_03 matches the README's
     # canonical 40-speaker basis rather than the earlier 5-speaker sweep.
     _try(data, 'rd',           _load_rd_sweep,        comp / '2026-08-10_paper_numbers' / 'report.txt')
@@ -206,6 +210,40 @@ def _load_rd_sweep(path: Path):
                     pesq=float(m.group(3)), stoi=float(m.group(4)),
                 ))
     return dict(ours=ours, encodec=encodec)
+
+
+# ---- Checkpoint-inference snapshots (no surviving generator script) -------
+
+# Both blocks below were produced by an ad-hoc analysis run on 2026-07-07
+# against checkpoints_active/temporal_phaseG/best.pt -- i.e. the pre-#27
+# checkpoint, trained with the non-functional window mask. That is the correct
+# checkpoint for the attention figure specifically, since the figure exists to
+# document that bug's effect. The generating script was never committed, so
+# these are transcribed from the written-up results rather than re-parsed.
+# Provenance: docs/report_results/12_attention_statistics.md
+#             docs/report_results/13_quantization_gap.md
+
+# Encoder self-attention, 4 speakers x 499 latent frames, seq_len=1995 at the
+# transformer input (16 kHz / total encoder stride 8 = 2000 Hz frame rate).
+ATTENTION_STATS = [
+    dict(layer=1, distance=499.53, entropy=9.3718),
+    dict(layer=2, distance=511.44, entropy=9.2728),
+    dict(layer=3, distance=490.17, entropy=9.1453),
+    dict(layer=4, distance=472.55, entropy=9.2821),
+    dict(layer=5, distance=440.96, entropy=9.0668),
+    dict(layer=6, distance=463.29, entropy=8.9556),
+]
+ATTENTION_SEQ_LEN = 1995      # transformer positions in a 1 s training chunk
+ATTENTION_FRAME_RATE = 2000   # Hz, transformer input rate
+ATTENTION_INTENDED_WINDOW = 200  # frames the window_size parameter asked for
+
+# Float vs 3-bit reconstruction SNR, Phase G, per speaker (dB).
+QUANT_GAP = [
+    dict(speaker='1089', float_snr=4.61, q3_snr=4.23),
+    dict(speaker='1188', float_snr=2.91, q3_snr=2.54),
+    dict(speaker='1221', float_snr=0.90, q3_snr=0.47),
+    dict(speaker='1284', float_snr=7.84, q3_snr=7.22),
+]
 
 
 # ---- R-D sweep by latent width (16 / 32 / 64-dim, per-speaker CSVs) -------

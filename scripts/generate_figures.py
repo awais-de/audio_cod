@@ -59,8 +59,8 @@ FIGURES: dict[str, tuple] = {
     'fig_17_corruption':              (plots.fig_09_corruption,         'Bitstream corruption robustness'),
     'fig_18_speaker_probe':           (plots.fig_08_speaker_probe,      'Speaker identity probe recall (sorted)'),
     'fig_19_music_eval':              (plots.fig_19_music_eval,         'Music evaluation SI-SDR  (requires music eval run)'),
-    'fig_20_attention_stats':         (plots.fig_11_attention,          '[SKIP] Attention stats — requires checkpoint inference'),
-    'fig_21_quant_gap':               (plots.fig_12_quant_gap,          '[SKIP] Quantisation gap — requires float vs 3-bit inference'),
+    'fig_20_attention_stats':         (plots.fig_11_attention,          'Attention span + selectivity per layer (window-mask bug evidence)'),
+    'fig_21_quant_gap':               (plots.fig_12_quant_gap,          'Float vs 3-bit reconstruction SNR per speaker'),
     'fig_22_attn_heatmaps':           (plots.fig_14_attn_heatmaps,      '[SKIP] Attention heatmaps — requires saved attention weights'),
     'fig_23_rd_sweep_width':          (plots.fig_24_rd_sweep_width,     'R-D sweep by latent width: PESQ-WB + STOI vs bitrate, 16/32/64-dim'),
 }

@@ -310,7 +310,7 @@ python scripts/04a_phaseD_train.py      # Phase D     — uniform noise proxy (d
 python scripts/05a_phaseDvae_train.py   # Phase D-VAE — variational bottleneck (KL-regularized)
 python scripts/06a_phaseEntropy_train.py # Phase D-Entropy — soft entropy penalty, no VAE
 python scripts/06a_phaseE_train.py      # Phase E     — log-magnitude STFT loss
-python scripts/07a_phaseF_train.py      # Phase F     — triple combined spectral loss (30 epochs)
+python scripts/07a_phaseF_train.py      # Phase F     — triple combined spectral loss (40 epochs)
 python scripts/08a_phaseG_train.py      # Phase G     — fine-polish pass (LR=2e-7, 20 epochs)
 ```
 
