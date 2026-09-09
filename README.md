@@ -32,18 +32,20 @@ Developed at TU Ilmenau, Faculty of Electrical Engineering and Information Techn
 
 ### 1. Entropy and quality move together — in both directions
 
-Every phase measures two things after training: perceptual quality (PESQ-WB, STOI) and the Shannon entropy of the quantized latent, per dimension. Across five of six phases, both rise together as the training objective is made more perceptually sophisticated:
+Every phase measures two things after training: perceptual quality (PESQ-WB, STOI) and the Shannon entropy of the quantized latent, per dimension. Across the five phases that are not D-VAE, both trend upward together as the training objective is made more perceptually sophisticated — C to G gains 0.059 PESQ-WB and 0.058 bits of entropy:
 
 | Phase | Change | PESQ-WB | STOI | Bitrate | Mean latent entropy |
 |---|---|---|---|---|---|
-| C | Baseline (MSE + noise augmentation) | 1.202 | 0.733 | 5.7 kbps | 1.462 bits |
-| D | Alternative quantization proxy | 1.222 | 0.731 | 5.8 kbps | 1.455 bits |
-| **D-VAE** | **+ KL regularization** | **1.181** | **0.702** | **4.6 kbps** | **1.090 bits** |
-| E | Log-magnitude spectral loss | 1.262 | 0.751 | 5.9 kbps | 1.533 bits |
-| F | Combined triple spectral loss | 1.265 | 0.766 | 5.9 kbps | 1.521 bits |
-| G | Fine-polish (best model) | 1.279 | 0.766 | 5.9 kbps | 1.520 bits |
+| C | Baseline (MSE + noise augmentation) | 1.199 | 0.759 | 5.58 kbps | 1.462 bits |
+| D | Alternative quantization proxy | 1.219 | 0.761 | 5.48 kbps | 1.455 bits |
+| **D-VAE** | **+ KL regularization** | **1.174** | **0.729** | **4.66 kbps** | **1.090 bits** |
+| E | Log-magnitude spectral loss | 1.253 | 0.770 | 6.05 kbps | 1.533 bits |
+| F | Combined triple spectral loss | 1.247 | 0.790 | 5.89 kbps | 1.521 bits |
+| G | Fine-polish (best model) | 1.258 | 0.792 | 5.89 kbps | 1.520 bits |
 
-Phase D-VAE is the deliberate exception, and it's the piece that turns this from a correlation into evidence: a KL-divergence term directly penalizes the latent's entropy, with no change to the reconstruction objective. Entropy drops sharply (1.090 vs. ~1.5 bits elsewhere) — and quality drops with it. This is the one experiment in the curriculum where entropy was pushed in the *opposite* direction from every other phase, on purpose, and quality followed it down anyway.
+Quality and bitrate are means over 40 LibriSpeech `test-clean` speakers with bootstrapped 95% confidence intervals (`comparisons/2026-08-13_confidence_intervals/report.txt`). Latent entropy is measured on the canonical 5-speaker set (`comparisons/2026-08-10_compression_analysis/report.txt`), which is the basis used for every entropy figure in this repository.
+
+Phase D-VAE is the deliberate exception, and it's the piece that turns this from a correlation into evidence: a KL-divergence term directly penalizes the latent's entropy, with no change to the reconstruction objective. Entropy drops sharply (1.090 vs. ~1.5 bits elsewhere) — and quality drops with it, by 0.045 PESQ-WB and 0.032 STOI against Phase D, both p<0.0001 on a paired Wilcoxon test at n=40. This is the one experiment in the curriculum where entropy was pushed in the *opposite* direction from every other phase, on purpose, and quality followed it down anyway.
 
 ![Quality metrics across the full 8-phase curriculum](plots/fig_02_phase_progression.png)
 
@@ -57,18 +59,18 @@ Phase G's trained weights, swept from 1-bit to 6-bit quantization at inference t
 
 | Bits | Levels | Theoretical kbps | Effective kbps | PESQ-WB | STOI |
 |---|---|---|---|---|---|
-| 1 | 2 | 3.2 | 3.55 | 1.082 | 0.456 |
-| 2 | 4 | 6.4 | 3.78 | 1.100 | 0.589 |
-| **3 (trained)** | 8 | 9.6 | 5.87 | 1.279 | 0.766 |
-| 4 | 16 | 12.8 | 8.79 | 1.366 | 0.793 |
-| 5 | 32 | 16.0 | 12.17 | 1.397 | 0.804 |
-| 6 | 64 | 19.2 | 15.18 | 1.405 | 0.806 |
+| 1 | 2 | 3.2 | 3.51 | 1.052 | 0.453 |
+| 2 | 4 | 6.4 | 3.77 | 1.094 | 0.597 |
+| **3 (trained)** | 8 | 9.6 | 5.89 | 1.258 | 0.792 |
+| 4 | 16 | 12.8 | 8.78 | 1.347 | 0.820 |
+| 5 | 32 | 16.0 | 11.87 | 1.379 | 0.828 |
+| 6 | 64 | 19.2 | 14.68 | 1.389 | 0.832 |
 
-Going from 1-bit to 3-bit produces real gains. Past 3-bit, bitrate *triples* (5.87 → 15.18 kbps) while STOI moves only 0.793 → 0.806. If the ceiling were a resolution problem, more bits would keep helping. It doesn't — it plateaus hard, meaning the latent had already run out of exploitable information well before the quantizer ran out of levels.
+Going from 1-bit to 3-bit produces real gains. Past 3-bit, bitrate rises 2.5× (5.89 → 14.68 kbps) while STOI moves only 0.792 → 0.832 and PESQ-WB only 1.258 → 1.389. If the ceiling were a resolution problem, more bits would keep helping. It doesn't — it plateaus hard, meaning the latent had already run out of exploitable information well before the quantizer ran out of levels.
 
 ![Rate-distortion sweep: PESQ-WB and STOI vs bitrate, 1-bit through 6-bit, EnCodec shown for reference](plots/fig_03_rd_curve.png)
 
-Reproduce with `python scripts/13_rd_sweep.py`.
+Same 40-speaker set as the table above (`comparisons/2026-08-10_paper_numbers/report.txt`). Reproduce with `python scripts/eval_paper_numbers.py`; `python scripts/13_rd_sweep.py` runs the same sweep on the 5-speaker set.
 
 ### 3. Causality costs quality — a small but real and reproducible effect
 
@@ -84,13 +86,20 @@ Causal beats non-causal under both protocols (paired Wilcoxon, n=40, p<0.0001 on
 
 ![Causal vs non-causal, per-speaker PESQ-WB and STOI, fair depth-matched comparison](plots/fig_16_causality.png)
 
-Almost every speaker falls above the diagonal — causal wins consistently, not just on average. The effect is real but small (ΔPESQ ≈ 0.07–0.10) next to the ~1.6-point gap to EnCodec at comparable bitrate below: causality is a minor contributor to that gap, not the explanation for it — the paper's argument remains that most of the gap comes from EnCodec's adversarial training producing a fundamentally different latent-shaping signal than any reconstruction-based loss used here can supply.
+Almost every speaker falls above the diagonal — causal wins consistently, not just on average. The effect is real but small (ΔPESQ ≈ 0.07–0.10) next to the roughly 1.6-point gap to EnCodec at comparable bitrate below (see the provenance note under [Results](#results) — the exact size of that gap is pending re-measurement, but it is more than an order of magnitude larger than the causality effect either way): causality is a minor contributor to that gap, not the explanation for it — the paper's argument remains that most of the gap comes from EnCodec's adversarial training producing a fundamentally different latent-shaping signal than any reconstruction-based loss used here can supply.
 
 ---
 
 ## Results
 
-Evaluated on LibriSpeech `test-clean` (5 speakers, 5-second clips, 16 kHz mono).
+EntroCodec rows are means over 40 LibriSpeech `test-clean` speakers, 5-second clips, 16 kHz mono, with bootstrapped 95% confidence intervals.
+
+| Codec | Bitrate | PESQ-WB | STOI |
+|---|---|---|---|
+| EntroCodec — Phase C | 5.58 kbps | 1.199 [1.176, 1.224] | 0.759 [0.744, 0.773] |
+| **EntroCodec — Phase G (default)** | **5.89 kbps** | **1.258 [1.229, 1.289]** | **0.792 [0.778, 0.805]** |
+
+Reference codecs, carried over from the earlier 5-speaker comparison runs:
 
 | Codec | Bitrate | PESQ-WB | STOI |
 |---|---|---|---|
@@ -98,12 +107,12 @@ Evaluated on LibriSpeech `test-clean` (5 speakers, 5-second clips, 16 kHz mono).
 | EnCodec 1.5 kbps (Meta) | 1.5 kbps | 1.611 | 0.829 |
 | EnCodec 3.0 kbps (Meta) | 3.0 kbps | 2.148 | 0.880 |
 | EnCodec 6.0 kbps (Meta) | 6.0 kbps | 2.842 | 0.922 |
-| EntroCodec — Phase C | 5.7 kbps | 1.202 | 0.733 |
-| **EntroCodec — Phase G (default)** | **5.9 kbps** | **1.279** | **0.766** |
 
-**On the gap to EnCodec:** EnCodec uses residual vector quantization and adversarial training — neither replicated here. Section 3 shows causality is only a minor contributor to the gap (ΔPESQ ≈ 0.07–0.10 from removing the real-time constraint, against a ~1.6-point gap to EnCodec at comparable bitrate). The contribution is the controlled evidence for *why* scalar-quantization codecs hit their quality ceiling, not closing the gap to systems with structurally different architectures.
+> **Provenance note.** The reference rows are on the 5-speaker set, not the 40-speaker set used for the EntroCodec rows, so the two tables are not matched-set comparisons. These reference values are also carried in this repository only as fixed constants rather than as the output of a stored evaluation run, and the surviving documentation disagrees on whether they were measured locally or taken from published figures. They are being re-established from a local evaluation before any of them go into the write-up, and the AAC PESQ-WB value in particular should not be cited until then.
 
-To reproduce this table: `python scripts/08b_phaseG_eval.py`
+**On the gap to EnCodec:** EnCodec uses residual vector quantization and adversarial training — neither replicated here. Section 3 shows causality is only a minor contributor to the gap (ΔPESQ ≈ 0.07–0.10 from removing the real-time constraint, against a gap to EnCodec at comparable bitrate that is more than an order of magnitude larger). The contribution is the controlled evidence for *why* scalar-quantization codecs hit their quality ceiling, not closing the gap to systems with structurally different architectures.
+
+To reproduce the EntroCodec rows: `python scripts/eval_confidence_intervals.py`
 
 > **Note on PESQ:** the `pesq` package compiles a C extension at install time. See [Dependencies](#dependencies) for platform-specific build tool requirements. Without it, PESQ shows `n/a` and STOI is reported instead.
 
@@ -113,7 +122,7 @@ To reproduce this table: `python scripts/08b_phaseG_eval.py`
 
 Three additional experiments characterize the latent and rule out alternative explanations.
 
-**Speaker identity is not disentangled from content.** A linear probe on the frozen, mean-pooled latent recovers speaker identity at 35.8% accuracy against a 3.1% chance baseline (32 speakers) — expected, since reconstruction-only training has no mechanism to separate "what is said" from "who said it."
+**Speaker identity is not disentangled from content.** A linear probe on the frozen, mean-pooled Phase G latent recovers speaker identity at 29.6% accuracy against a 2.5% chance baseline (40 speakers), 11.8× above chance — expected, since reconstruction-only training has no mechanism to separate "what is said" from "who said it." Suppressing latent entropy also suppresses this leakage: the same probe recovers 28.3% on Phase D and 25.8% on Phase D-Entropy, so the entropy penalty compresses speaker identity along with everything else rather than trimming only content-irrelevant capacity.
 
 ![Speaker identity linear probe, per-speaker recall](plots/fig_18_speaker_probe.png)
 
@@ -134,7 +143,7 @@ A pure tone compresses to 0.34 kbps; white/pink noise approaches the 9.6 kbps th
 - **The intended 200-frame (100 ms) sliding attention window does not function.** `torch.triu` where `torch.tril` was needed makes the window mask a no-op — the model trained on full unbounded causal attention across the entire ~1,995-frame chunk in every phase. Reported metrics reflect this actual behavior; the architecture description below has been corrected. Detail in [12_attention_statistics.md](docs/report_results/12_attention_statistics.md).
 - **No positional encoding.** Temporal order comes from causal convolutions and the causal attention mask only.
 - **Dropout was never active.** All training scripts passed `dropout=0.0`. Regularization came from noise augmentation and Phase D-VAE's KL term only.
-- **Latent width (`bottleneck_dim=32`) — quality ordering and the D-VAE entropy-quality coupling both confirmed at 16 and 64 dims.** Full A→G curricula at 16-dim and 64-dim confirm monotonic quality scaling (G-16: PESQ 1.135 < G-32: 1.256 < G-64: 1.272). The D-VAE ablation (β·KL) at both widths (#41) confirms the coupling holds there too, same direction and significance (p<0.0001) as at 32-dim.
+- **Latent width (`bottleneck_dim=32`) — quality ordering and the D-VAE entropy-quality coupling both confirmed at 16 and 64 dims.** Full A→G curricula at 16-dim and 64-dim order monotonically at their trained operating points (G-16: PESQ 1.136 < G-32: 1.258 < G-64: 1.273), though each width runs at a different bitrate there, so that ordering is bitrate-conditional rather than unconditional — see [Future work](#future-work) item 3. The D-VAE ablation (β·KL) at both widths (#41) confirms the coupling holds there too, same direction and significance (p<0.0001) as at 32-dim.
 
 ---
 
@@ -159,7 +168,7 @@ Each width's curve spans a different bitrate range (wider bottleneck → higher 
 
 | Item | What is needed |
 |---|---|
-| Phase A/B PESQ | **Resolved.** `pesq` now builds via a local conda env with its own Python headers (no Windows needed) — see issue #20. Phase A: 1.181 PESQ-WB / 0.529 STOI; Phase B: 1.280 PESQ-WB / 0.557 STOI. |
+| Phase A/B PESQ | **Resolved.** `pesq` now builds via a local conda env with its own Python headers (no Windows needed) — see issue #20. On the canonical protocol (5-speaker set, 5-second clips encoded as a single chunk, matching every other evaluation here) Phase A is 1.150 PESQ-WB / 0.626 STOI / 3.73 kbps and Phase B is 1.270 PESQ-WB / 0.716 STOI / 5.44 kbps. An earlier run of `eval_phaseAB.py` reported 1.181 / 0.529 and 1.280 / 0.557; it encoded in 1-second chunks rather than 5, which is the sole source of the discrepancy, and its numbers are superseded. |
 | Phase G canonical entropy | **Resolved.** 1.520 bits (5-speaker canonical set) — used consistently for all headline numbers; the 1.5944-bit (4-speaker recompute) figure is superseded. |
 | Bitrate standardisation | **Resolved.** 5.89 kbps is canonical (n=40, genuine — see #10), superseding the earlier 5.87/5.97 kbps ambiguity from inconsistent speaker sets. |
 
@@ -193,7 +202,7 @@ zlib is used deliberately for its lack of learned adaptivity: because it exploit
 | Quantization | 3-bit uniform (8 levels) + zlib entropy coding |
 | Sample rate | 16 kHz mono |
 | Typical bitrate (Phase G) | ~5.9 kbps |
-| Total parameters | ~38M |
+| Total parameters | 21.8M (encoder 10.87M, decoder 10.88M, projections and temporal stride 0.07M) |
 | Streaming chunking | Set by inference chunk size (`encode.py` default: 1s), independent of the attention mechanism — see Known Limitations |
 
 ---
@@ -201,7 +210,7 @@ zlib is used deliberately for its lack of learned adaptivity: because it exploit
 ## Quick start
 
 ```
-git clone https://gitlab.tu-ilmenau.de/muaw1874/audio_cod.git
+git clone https://github.com/awais-de/audio_cod.git
 cd audio_cod
 
 python -m venv venv
@@ -281,18 +290,31 @@ Both scripts accept `--checkpoint path/to/best.pt` to select a specific phase an
 
 ## Training curriculum
 
-This is the controlled experiment, not just a list of scripts: each phase loads the previous phase's `best.pt` and changes exactly one aspect of the training objective, holding architecture and data fixed. This single-variable-at-a-time design is what makes the entropy-quality evidence in Section 1 attributable to a specific cause rather than an aggregate correlation. Requires LibriSpeech `train-clean-100` (~6 GB) under `../datasets/LibriSpeech/train-clean-100/`.
+This is the controlled experiment, not just a list of scripts. Phase C is the common parent: Phases D, D-VAE, D-Entropy, E and F each load Phase C's `best.pt` and change exactly one aspect of the training objective, holding architecture and data fixed. That makes them siblings rather than a chain, which is what lets Section 1 attribute the entropy-quality evidence to a specific cause instead of an aggregate correlation — every one of those phases differs from the same baseline by one variable. The chain runs only where it has to: A from the unconstrained base model, B from A, C from B, G from F, and the non-causal ablation from G.
 
 ```
-python scripts/01_phaseA_train.py     # Phase A     — float32 baseline, no quantization
-python scripts/02_phaseB_train.py     # Phase B     — 3-bit STE quantisation-aware training
-python scripts/03a_phaseC_train.py    # Phase C     — noise augmentation (white/pink/babble)
-python scripts/04a_phaseD_train.py    # Phase D     — uniform noise proxy (differentiable QAT)
-python scripts/05a_phaseDvae_train.py # Phase D-VAE — variational bottleneck (KL-regularized)
-python scripts/06a_phaseE_train.py    # Phase E     — log-magnitude STFT loss
-python scripts/07a_phaseF_train.py    # Phase F     — triple combined spectral loss (40 epochs)
-python scripts/08a_phaseG_train.py    # Phase G     — fine-polish pass (LR=2e-7, 20 epochs)
+phase1_base → A → B → C ─┬→ D          (uniform noise proxy)
+                         ├→ D-VAE      (variational bottleneck)
+                         ├→ D-Entropy  (soft entropy penalty)
+                         ├→ E          (log-magnitude STFT loss)
+                         └→ F → G      (triple spectral loss, then fine-polish)
 ```
+
+Requires LibriSpeech `train-clean-100` (~6 GB) under `../datasets/LibriSpeech/train-clean-100/`.
+
+```
+python scripts/01_phaseA_train.py       # Phase A     — float32 baseline, no quantization
+python scripts/02_phaseB_train.py       # Phase B     — 3-bit STE quantisation-aware training
+python scripts/03a_phaseC_train.py      # Phase C     — noise augmentation (white/pink/babble)
+python scripts/04a_phaseD_train.py      # Phase D     — uniform noise proxy (differentiable QAT)
+python scripts/05a_phaseDvae_train.py   # Phase D-VAE — variational bottleneck (KL-regularized)
+python scripts/06a_phaseEntropy_train.py # Phase D-Entropy — soft entropy penalty, no VAE
+python scripts/06a_phaseE_train.py      # Phase E     — log-magnitude STFT loss
+python scripts/07a_phaseF_train.py      # Phase F     — triple combined spectral loss (30 epochs)
+python scripts/08a_phaseG_train.py      # Phase G     — fine-polish pass (LR=2e-7, 20 epochs)
+```
+
+All phases train with Adam at batch size 1 and 4 gradient-accumulation steps, 1000 samples per epoch, cosine-annealed learning rate, and `dropout=0.0`.
 
 To evaluate a phase against its baseline:
 
@@ -353,7 +375,6 @@ audio_cod/
 │   ├── model_noncausal.py          Bidirectional variant used for the NC ablation
 │   ├── losses.py                   Shared loss functions (STFT, spectral, noise utils)
 │   ├── codec_utils.py              Shared inference utilities (load_model, encode_decode)
-│   ├── train.py                    Base training loop and dataset classes
 │   └── paths.py                    Dataset/checkpoint path resolution
 ├── scripts/
 │   ├── infer_offline.py            Offline inference: encode → decode → metrics
