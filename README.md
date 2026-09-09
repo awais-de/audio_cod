@@ -55,7 +55,7 @@ A second mechanism reproduces it with no VAE involved. Phase D-Entropy replaces 
 | D-VAE | β·KL | 1.107 bits | 1.208 | 0.757 |
 | **D-Entropy** | **soft entropy penalty** | **1.022 bits** | **1.184** | **0.733** |
 
-Both are significant against Phase D at p<0.0001 on both metrics. The two mechanisms share no machinery, and the one that suppresses entropy further is also the one that costs more quality — a dose-response relationship rather than a single anomalous run.
+Both are significant against Phase D at p<0.0001 on both metrics. The two mechanisms share no machinery, and the one that suppresses entropy further also costs more quality.
 
 ![Entropy penalty ablation: entropy, quality and bitrate for D, D-VAE and D-Entropy](plots/fig_11_entropy_ablation.png)
 
@@ -65,7 +65,7 @@ The effect isn't concentrated in a few latent dimensions — it shows up broadly
 
 ![Per-dimension entropy across phases](plots/fig_07_entropy_heatmap.png)
 
-*The three plots above were generated before the platform re-measurement; per-phase values in the underlying reports differ from the tables above only within the ranges shown, not in ordering or significance.*
+Plots above predate the platform re-measurement; values differ from the tables only within the ranges shown, not in ordering or significance.
 
 ### 2. Adding quantization bits stops helping — the ceiling isn't resolution
 
@@ -84,11 +84,11 @@ Going from 1-bit to 3-bit produces real gains. Past 3-bit, bitrate rises 2.5× (
 
 ![Rate-distortion sweep: PESQ-WB and STOI vs bitrate, 1-bit through 6-bit, EnCodec shown for reference](plots/fig_03_rd_curve.png)
 
-n=40, platform checkpoint (`comparisons/2026-08-13_rd_sweep_fixed/report.txt`); the plot predates this table and shows the earlier configuration's sweep, which lands within the same range. Reproduce by running the same sweep script against `checkpoints_active/temporal_phaseG_fixed/best.pt`.
+n=40, platform checkpoint (`comparisons/2026-08-13_rd_sweep_fixed/report.txt`). The plot predates this table, on the earlier configuration's sweep, within the same range. Reproduce against `checkpoints_active/temporal_phaseG_fixed/best.pt`.
 
 ### 3. Causality costs quality — a small but real and reproducible effect
 
-An earlier non-causal ablation (bidirectional attention, fine-tuned for 30 epochs from Phase G, evaluated on 5 speakers) found no measurable difference from the causal model. Two corrections change that conclusion: correcting how the attention window was masked, and — since that alone didn't explain a gap that showed up under it — training the non-causal variant through the full A→G curriculum from scratch instead of fine-tuning it, so both models get the same training depth. Evaluated on 40 speakers:
+An earlier non-causal ablation (bidirectional attention, fine-tuned for 30 epochs from Phase G, evaluated on 5 speakers) found no measurable difference from the causal model. Two corrections change that conclusion: correcting how the attention window was masked, and training the non-causal variant through the full A→G curriculum from scratch instead of fine-tuning it, so both models get the same training depth. Evaluated on 40 speakers:
 
 | Model | Bitrate | PESQ-WB | STOI |
 |---|---|---|---|
@@ -100,7 +100,7 @@ Causal beats non-causal under both protocols (paired Wilcoxon, n=40, p<0.0001 on
 
 ![Causal vs non-causal, per-speaker PESQ-WB and STOI, fair depth-matched comparison](plots/fig_16_causality.png)
 
-Almost every speaker falls above the diagonal — causal wins consistently, not just on average. The effect is real but small (ΔPESQ ≈ 0.02–0.07) next to the 1.58-point gap to EnCodec at the closest matched bitrate below: causality is a minor contributor to that gap, not the explanation for it — the paper's argument remains that most of the gap comes from EnCodec's adversarial training producing a fundamentally different latent-shaping signal than any reconstruction-based loss used here can supply.
+Almost every speaker falls above the diagonal — causal wins consistently, not just on average. The effect is real but small (ΔPESQ ≈ 0.02–0.07) next to the 1.58-point gap to EnCodec at the closest matched bitrate below: causality is a minor contributor to that gap, not the explanation for it — most of the gap comes from EnCodec's residual vector quantization and adversarial training, neither of which this project replicates.
 
 ---
 
@@ -131,7 +131,7 @@ To reproduce: `python scripts/eval_confidence_intervals.py` for the EntroCodec r
 
 ## Supporting experiments
 
-Three additional experiments characterize the latent and rule out alternative explanations. All three were measured before the attention-window correction and have not yet been re-run against the platform checkpoint; the mechanisms they characterize are not expected to be window-sensitive, but the exact figures are pending confirmation.
+Three additional experiments characterize the latent and rule out alternative explanations. All three were measured before the attention-window correction and have not yet been re-run against the platform checkpoint.
 
 **Speaker identity is not disentangled from content.** A linear probe on the frozen, mean-pooled Phase G latent recovers speaker identity at 29.6% accuracy against a 2.5% chance baseline (40 speakers), 11.8× above chance — expected, since reconstruction-only training has no mechanism to separate "what is said" from "who said it." Suppressing latent entropy also suppresses this leakage: the same probe recovers 28.3% on Phase D and 25.8% on Phase D-Entropy, so the entropy penalty compresses speaker identity along with everything else rather than trimming only content-irrelevant capacity.
 
