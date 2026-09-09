@@ -66,10 +66,15 @@ PHASE_A_CKPT = PROJECT_ROOT / 'checkpoints_active/temporal_phaseA/best.pt'
 PHASE_B_CKPT = PROJECT_ROOT / 'checkpoints_active/temporal_phaseB/best.pt'
 PHASE_G_CKPT = PROJECT_ROOT / 'checkpoints_active/temporal_phaseG/best.pt'
 
+# EnCodec reference points. Measured locally by scripts/eval_baselines.py on the
+# same 40-speaker set, clip length and metric code as the EntroCodec numbers --
+# see comparisons/2026-09-09_baselines/report.txt. These were previously carried
+# as constants with no stored run behind them and contradictory notes on their
+# origin; do not edit them by hand, re-run eval_baselines.py instead.
 ENCODEC_REF = [
-    {'label': 'EnCodec 1.5 kbps', 'kbps': 1.5,  'pesq': 1.611, 'stoi': 0.829},
-    {'label': 'EnCodec 3.0 kbps', 'kbps': 3.0,  'pesq': 2.148, 'stoi': 0.880},
-    {'label': 'EnCodec 6.0 kbps', 'kbps': 6.0,  'pesq': 2.842, 'stoi': 0.922},
+    {'label': 'EnCodec 1.5 kbps', 'kbps': 1.5,  'pesq': 1.554, 'stoi': 0.846},
+    {'label': 'EnCodec 3.0 kbps', 'kbps': 3.0,  'pesq': 2.122, 'stoi': 0.902},
+    {'label': 'EnCodec 6.0 kbps', 'kbps': 6.0,  'pesq': 2.823, 'stoi': 0.940},
 ]
 
 

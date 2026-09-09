@@ -53,6 +53,16 @@ def load_all(project_root: Path) -> dict:
     # canonical 40-speaker basis rather than the earlier 5-speaker sweep.
     _try(data, 'rd',           _load_rd_sweep,        comp / '2026-08-10_paper_numbers' / 'report.txt')
 
+    # Locally measured reference codecs. The EnCodec rows stored inside the older
+    # sweep reports came from hardcoded constants, so prefer the measured run and
+    # overwrite them where it exists.
+    baselines_dir = _latest(comp, '*_baselines')
+    if baselines_dir:
+        _try(data, 'baselines', _load_baselines, baselines_dir / 'report.txt')
+        measured = data.get('baselines', {}).get('encodec')
+        if measured and 'rd' in data:
+            data['rd']['encodec'] = measured
+
     # One-off historical snapshots, evaluated on the fixed canonical 5-speaker
     # set (unaffected by dataset completeness) -- pinned dates are fine here.
     _try(data, 'multi_coder',  _load_multi_coder,     comp / '2026-07-10_multi_coder' / 'report.txt')
@@ -223,6 +233,36 @@ def _load_rd_sweep(path: Path):
                     pesq=float(m.group(3)), stoi=float(m.group(4)),
                 ))
     return dict(ours=ours, encodec=encodec)
+
+
+# ---- Reference codec baselines (eval_baselines.py) ------------------------
+
+_RE_BASELINE = re.compile(
+    r'^\s+(\S+?)@([\d.]+)kbps\s+([\d.]+)k\s+([\d.]+)\s+\[[\d.]+, [\d.]+\]'
+    r'\s+([\d.]+)\s+\[[\d.]+, [\d.]+\]'
+)
+
+
+def _load_baselines(path: Path):
+    """Parse the AAC / EnCodec baseline report into the same row shape the R-D
+    figure already expects for its reference overlay."""
+    encodec, aac = [], []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        m = _RE_BASELINE.match(line)
+        if not m:
+            continue
+        system, target, achieved, pesq, stoi = m.groups()
+        row = dict(kbps=float(achieved), eff_kbps=float(achieved),
+                   pesq=float(pesq), stoi=float(stoi))
+        if system.lower().startswith('encodec'):
+            # Label by the requested bandwidth: EnCodec hits its target exactly,
+            # and that is how its operating points are named everywhere else.
+            row['kbps'] = float(target)
+            row['eff_kbps'] = float(target)
+            encodec.append(row)
+        else:
+            aac.append(row)
+    return dict(encodec=encodec, aac=aac)
 
 
 # ---- Checkpoint-inference snapshots (no surviving generator script) -------

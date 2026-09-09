@@ -43,9 +43,21 @@ Every phase measures two things after training: perceptual quality (PESQ-WB, STO
 | F | Combined triple spectral loss | 1.247 | 0.790 | 5.89 kbps | 1.521 bits |
 | G | Fine-polish (best model) | 1.258 | 0.792 | 5.89 kbps | 1.520 bits |
 
-Quality and bitrate are means over 40 LibriSpeech `test-clean` speakers with bootstrapped 95% confidence intervals (`comparisons/2026-08-13_confidence_intervals/report.txt`). Latent entropy is measured on the canonical 5-speaker set (`comparisons/2026-08-10_compression_analysis/report.txt`), which is the basis used for every entropy figure in this repository.
+Quality and bitrate are means over 40 LibriSpeech `test-clean` speakers with bootstrapped 95% confidence intervals (`comparisons/2026-08-13_confidence_intervals/report.txt`). Latent entropy is measured on the canonical 5-speaker set (`comparisons/2026-09-09_compression_analysis/report.txt`), which is the basis used for every entropy figure in this repository.
 
 Phase D-VAE is the deliberate exception, and it's the piece that turns this from a correlation into evidence: a KL-divergence term directly penalizes the latent's entropy, with no change to the reconstruction objective. Entropy drops sharply (1.090 vs. ~1.5 bits elsewhere) — and quality drops with it, by 0.045 PESQ-WB and 0.032 STOI against Phase D, both p<0.0001 on a paired Wilcoxon test at n=40. This is the one experiment in the curriculum where entropy was pushed in the *opposite* direction from every other phase, on purpose, and quality followed it down anyway.
+
+A second mechanism reproduces it with no VAE involved. Phase D-Entropy replaces the KL term with a soft penalty applied directly to the latent's own symbol distribution, and pushes entropy slightly further down than D-VAE manages:
+
+| Phase | Mechanism | Mean latent entropy | PESQ-WB | STOI |
+|---|---|---|---|---|
+| D | none | 1.455 bits | 1.219 | 0.761 |
+| D-VAE | β·KL | 1.090 bits | 1.174 | 0.729 |
+| **D-Entropy** | **soft entropy penalty** | **1.078 bits** | **1.148** | **0.704** |
+
+Both are significant against Phase D at p<0.0001 on both metrics. The two mechanisms share no machinery, and the one that suppresses entropy further is also the one that costs more quality — a dose-response relationship rather than a single anomalous run.
+
+![Entropy penalty ablation: entropy, quality and bitrate for D, D-VAE and D-Entropy](plots/fig_11_entropy_ablation.png)
 
 ![Quality metrics across the full 8-phase curriculum](plots/fig_02_phase_progression.png)
 
@@ -86,33 +98,30 @@ Causal beats non-causal under both protocols (paired Wilcoxon, n=40, p<0.0001 on
 
 ![Causal vs non-causal, per-speaker PESQ-WB and STOI, fair depth-matched comparison](plots/fig_16_causality.png)
 
-Almost every speaker falls above the diagonal — causal wins consistently, not just on average. The effect is real but small (ΔPESQ ≈ 0.07–0.10) next to the roughly 1.6-point gap to EnCodec at comparable bitrate below (see the provenance note under [Results](#results) — the exact size of that gap is pending re-measurement, but it is more than an order of magnitude larger than the causality effect either way): causality is a minor contributor to that gap, not the explanation for it — the paper's argument remains that most of the gap comes from EnCodec's adversarial training producing a fundamentally different latent-shaping signal than any reconstruction-based loss used here can supply.
+Almost every speaker falls above the diagonal — causal wins consistently, not just on average. The effect is real but small (ΔPESQ ≈ 0.07–0.10) next to the 1.57-point gap to EnCodec at the closest matched bitrate below: causality is a minor contributor to that gap, not the explanation for it — the paper's argument remains that most of the gap comes from EnCodec's adversarial training producing a fundamentally different latent-shaping signal than any reconstruction-based loss used here can supply.
 
 ---
 
 ## Results
 
-EntroCodec rows are means over 40 LibriSpeech `test-clean` speakers, 5-second clips, 16 kHz mono, with bootstrapped 95% confidence intervals.
+Every row is a mean over the same 40 LibriSpeech `test-clean` speakers, 5-second clips, 16 kHz mono, with bootstrapped 95% confidence intervals. Reference codecs were measured locally with the same metric code as EntroCodec, so the comparison is matched on test set, clip length and metric implementation.
 
 | Codec | Bitrate | PESQ-WB | STOI |
 |---|---|---|---|
+| EnCodec 1.5 kbps (Meta) | 1.50 kbps | 1.554 [1.499, 1.608] | 0.846 [0.837, 0.854] |
+| EnCodec 3.0 kbps (Meta) | 3.00 kbps | 2.122 [2.045, 2.197] | 0.902 [0.894, 0.908] |
 | EntroCodec — Phase C | 5.58 kbps | 1.199 [1.176, 1.224] | 0.759 [0.744, 0.773] |
 | **EntroCodec — Phase G (default)** | **5.89 kbps** | **1.258 [1.229, 1.289]** | **0.792 [0.778, 0.805]** |
+| EnCodec 6.0 kbps (Meta) | 6.00 kbps | 2.823 [2.734, 2.913] | 0.940 [0.933, 0.945] |
+| AAC-LC | 15.83 kbps | 1.670 [1.593, 1.747] | 0.860 [0.855, 0.864] |
 
-Reference codecs, carried over from the earlier 5-speaker comparison runs:
+AAC is the classical anchor rather than a like-for-like competitor: AAC-LC cannot reach EntroCodec's operating point at all. Asked for 10 kbps it floors at 15.83 kbps on 16 kHz mono, which is 2.7× the bitrate Phase G runs at. EnCodec is the meaningful comparison, and the 6.0 kbps tier is the closest bitrate match to Phase G.
 
-| Codec | Bitrate | PESQ-WB | STOI |
-|---|---|---|---|
-| AAC | ~16 kbps | 1.641 | 0.855 |
-| EnCodec 1.5 kbps (Meta) | 1.5 kbps | 1.611 | 0.829 |
-| EnCodec 3.0 kbps (Meta) | 3.0 kbps | 2.148 | 0.880 |
-| EnCodec 6.0 kbps (Meta) | 6.0 kbps | 2.842 | 0.922 |
+Measured with `scripts/eval_baselines.py`. AAC uses FFmpeg's native AAC-LC encoder through PyAV; EnCodec uses the released 24 kHz model, with the 16 kHz input resampled up and the output resampled back. The higher-quality `libfdk_aac` encoder, which supports HE-AAC and would reach lower bitrates, is not distributable in pip or conda builds and so was not available.
 
-> **Provenance note.** The reference rows are on the 5-speaker set, not the 40-speaker set used for the EntroCodec rows, so the two tables are not matched-set comparisons. These reference values are also carried in this repository only as fixed constants rather than as the output of a stored evaluation run, and the surviving documentation disagrees on whether they were measured locally or taken from published figures. They are being re-established from a local evaluation before any of them go into the write-up, and the AAC PESQ-WB value in particular should not be cited until then.
+**On the gap to EnCodec:** at the closest matched bitrate, EnCodec at 6.0 kbps scores 2.823 against Phase G's 1.258, a gap of 1.57 PESQ-WB. EnCodec uses residual vector quantization and adversarial training, neither replicated here. Section 3 shows causality is only a minor contributor to that gap, worth ΔPESQ ≈ 0.07–0.10 from removing the real-time constraint, more than an order of magnitude smaller. The contribution is the controlled evidence for *why* scalar-quantization codecs hit their quality ceiling, not closing the gap to systems with structurally different architectures.
 
-**On the gap to EnCodec:** EnCodec uses residual vector quantization and adversarial training — neither replicated here. Section 3 shows causality is only a minor contributor to the gap (ΔPESQ ≈ 0.07–0.10 from removing the real-time constraint, against a gap to EnCodec at comparable bitrate that is more than an order of magnitude larger). The contribution is the controlled evidence for *why* scalar-quantization codecs hit their quality ceiling, not closing the gap to systems with structurally different architectures.
-
-To reproduce the EntroCodec rows: `python scripts/eval_confidence_intervals.py`
+To reproduce: `python scripts/eval_confidence_intervals.py` for the EntroCodec rows, `python scripts/eval_baselines.py` for the reference rows.
 
 > **Note on PESQ:** the `pesq` package compiles a C extension at install time. See [Dependencies](#dependencies) for platform-specific build tool requirements. Without it, PESQ shows `n/a` and STOI is reported instead.
 
