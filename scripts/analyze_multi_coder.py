@@ -40,6 +40,13 @@ PHASES = {
     'E':     PROJECT_ROOT / 'checkpoints_active/temporal_phaseE/best.pt',
     'F':     PROJECT_ROOT / 'checkpoints_active/temporal_phaseF/best.pt',
     'G':     PROJECT_ROOT / 'checkpoints_active/temporal_phaseG/best.pt',
+    # Platform (100ms attention window) family.
+    'C-fixed':     PROJECT_ROOT / 'checkpoints_active/temporal_phaseC_fixed/best.pt',
+    'D-fixed':     PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_fixed/best.pt',
+    'D-VAE-fixed': PROJECT_ROOT / 'checkpoints_active/temporal_phaseD_vae_fixed/best.pt',
+    'E-fixed':     PROJECT_ROOT / 'checkpoints_active/temporal_phaseE_fixed/best.pt',
+    'F-fixed':     PROJECT_ROOT / 'checkpoints_active/temporal_phaseF_fixed/best.pt',
+    'G-fixed':     PROJECT_ROOT / 'checkpoints_active/temporal_phaseG_fixed/best.pt',
 }
 
 NUM_LEVELS = 8

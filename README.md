@@ -131,9 +131,9 @@ To reproduce: `python scripts/eval_confidence_intervals.py` for the EntroCodec r
 
 ## Supporting experiments
 
-Three additional experiments characterize the latent and rule out alternative explanations. All three were measured before the attention-window correction and have not yet been re-run against the platform checkpoint.
+Three additional experiments characterize the latent and rule out alternative explanations.
 
-**Speaker identity is not disentangled from content.** A linear probe on the frozen, mean-pooled Phase G latent recovers speaker identity at 29.6% accuracy against a 2.5% chance baseline (40 speakers), 11.8× above chance — expected, since reconstruction-only training has no mechanism to separate "what is said" from "who said it." Suppressing latent entropy also suppresses this leakage: the same probe recovers 28.3% on Phase D and 25.8% on Phase D-Entropy, so the entropy penalty compresses speaker identity along with everything else rather than trimming only content-irrelevant capacity.
+**Speaker identity is not disentangled from content.** A linear probe on the frozen, mean-pooled Phase G latent recovers speaker identity at 33.6% accuracy against a 2.5% chance baseline (40 speakers), 13.5× above chance — expected, since reconstruction-only training has no mechanism to separate "what is said" from "who said it." Suppressing latent entropy also suppresses this leakage: the same probe recovers 33.0% on Phase D and 28.3% on Phase D-Entropy, so the entropy penalty compresses speaker identity along with everything else rather than trimming only content-irrelevant capacity.
 
 ![Speaker identity linear probe, per-speaker recall](plots/fig_18_speaker_probe.png)
 
@@ -145,7 +145,7 @@ Three additional experiments characterize the latent and rule out alternative ex
 
 ![Bitrate and intelligibility across signal types](plots/fig_14_ood_signals.png)
 
-A pure tone compresses to 0.34 kbps; white/pink noise approaches the 9.6 kbps theoretical cap — bitrate is a direct, mechanical readout of latent entropy (Section 1), and that holds for signals the model never saw in training.
+A pure tone compresses to 0.29 kbps; white/pink noise approaches the 9.6 kbps theoretical cap — bitrate is a direct, mechanical readout of latent entropy (Section 1), and that holds for signals the model never saw in training.
 
 ---
 

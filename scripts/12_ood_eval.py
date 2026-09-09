@@ -97,15 +97,21 @@ def add_reverb(speech: np.ndarray, sr: int = SR) -> np.ndarray:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--checkpoint', type=Path, default=None,
+                    help='Model checkpoint (default: best available G→F→C)')
+    args = ap.parse_args()
+
     device    = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    ckpt_path = find_checkpoint(PROJECT_ROOT)
+    ckpt_path = args.checkpoint or find_checkpoint(PROJECT_ROOT)
 
     timestamp = datetime.now().strftime('%Y-%m-%d')
-    out_dir   = PROJECT_ROOT / 'comparisons' / f'{timestamp}_ood_eval'
+    out_dir   = PROJECT_ROOT / 'comparisons' / f'{timestamp}_ood_eval_{ckpt_path.parent.name}'
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n{'='*68}")
-    print("OOD EVALUATION — Phase G on signal types outside training distribution")
+    print("OOD EVALUATION — signal types outside training distribution")
     print(f"{'='*68}")
     print(f"checkpoint: {ckpt_path.parent.name}")
     print(f"device    : {device}\n")
@@ -207,7 +213,7 @@ def main():
     sep = '-' * 68
     lines = [
         '', SEP,
-        'OOD EVALUATION — Phase G (causal codec vs signal type)',
+        'OOD EVALUATION — signal type vs codec (causal)',
         f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
         f"Checkpoint: {ckpt_path.parent.name}",
         SEP, '',

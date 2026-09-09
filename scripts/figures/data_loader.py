@@ -37,7 +37,9 @@ def load_all(project_root: Path) -> dict:
         _try(data, ('compression', 'per_dim_h'), _load_compression, compression_dir / 'report.txt')
 
     # The canonical speaker-leakage figure is specifically about Phase G.
-    probe_dir = _latest(comp, '*_speaker_probe_temporal_phaseG') or _latest(comp, '*_speaker_probe')
+    probe_dir = (_latest(comp, '*_speaker_probe_temporal_phaseG_fixed')
+                 or _latest(comp, '*_speaker_probe_temporal_phaseG')
+                 or _latest(comp, '*_speaker_probe'))
     if probe_dir:
         _try(data, 'speaker_probe', _load_speaker_probe, probe_dir / 'report.txt')
 
@@ -66,8 +68,10 @@ def load_all(project_root: Path) -> dict:
     # One-off historical snapshots, evaluated on the fixed canonical 5-speaker
     # set (unaffected by dataset completeness) -- pinned dates are fine here.
     _try(data, 'multi_coder',  _load_multi_coder,     comp / '2026-07-10_multi_coder' / 'report.txt')
-    _try(data, 'ood',          _load_ood,             comp / '2026-07-01_ood_eval' / 'report.txt')
-    _try(data, 'corruption',   _load_corruption,      comp / '2026-07-01_corruption_test' / 'report.txt')
+    ood_dir = _latest(comp, '*_ood_eval_temporal_phaseG_fixed') or comp / '2026-07-01_ood_eval'
+    _try(data, 'ood',          _load_ood,             ood_dir / 'report.txt')
+    corr_dir = _latest(comp, '*_corruption_test_temporal_phaseG_fixed') or comp / '2026-07-01_corruption_test'
+    _try(data, 'corruption',   _load_corruption,      corr_dir / 'report.txt')
     # Measured against the platform checkpoint (fixed 100ms attention window).
     # Superseded: 2026-07-18_complexity_latency (pre-fix checkpoint) -- kept only
     # to show the two are numerically identical, see the note in the newer report.

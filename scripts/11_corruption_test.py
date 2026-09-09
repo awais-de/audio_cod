@@ -83,11 +83,17 @@ def decode_chunk(model, corrupted: bytes, z_shape, z_min, z_max, scale, device):
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--checkpoint', type=Path, default=None,
+                    help='Model checkpoint (default: best available G→F→C)')
+    args = ap.parse_args()
+
     device    = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    ckpt_path = find_checkpoint(PROJECT_ROOT)
+    ckpt_path = args.checkpoint or find_checkpoint(PROJECT_ROOT)
 
     timestamp = datetime.now().strftime('%Y-%m-%d')
-    out_dir   = PROJECT_ROOT / 'comparisons' / f'{timestamp}_corruption_test'
+    out_dir   = PROJECT_ROOT / 'comparisons' / f'{timestamp}_corruption_test_{ckpt_path.parent.name}'
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n{'='*68}")
